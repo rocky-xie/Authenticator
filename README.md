@@ -1,54 +1,129 @@
-# Authenticator [![Build Status](https://travis-ci.com/Authenticator-Extension/Authenticator.svg?branch=dev)](https://travis-ci.com/Authenticator-Extension/Authenticator) [![Crowdin](https://d322cqt584bo4o.cloudfront.net/authenticator-firefox/localized.svg)](https://crowdin.com/project/authenticator-firefox) <img align="right" width="100" height="100" src="https://github.com/Authenticator-Extension/Authenticator/raw/dev/images/icon.svg">
+# Authenticator — security-maintained fork
 
-> Authenticator generates 2-Step Verification codes in your browser.
+<img align="right" width="100" height="100" src="images/icon.svg" alt="Authenticator icon">
 
-## Available for Chrome, Firefox, and Microsoft Edge
+[![CI](https://github.com/rocky-xie/Authenticator/actions/workflows/main.yml/badge.svg?branch=dev)](https://github.com/rocky-xie/Authenticator/actions/workflows/main.yml)
+[![CodeQL](https://github.com/rocky-xie/Authenticator/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/rocky-xie/Authenticator/actions/workflows/codeql-analysis.yml)
 
-[<img src="https://raw.githubusercontent.com/wiki/Authenticator-Extension/Authenticator/readme-images/chrome-web-store.png" title="Chrome Web Store" width="170" height="48" />](https://chrome.google.com/webstore/detail/authenticator/bhghoamapcdpbohphigoooaddinpkbai) [<img src="https://raw.githubusercontent.com/wiki/Authenticator-Extension/Authenticator/readme-images/firefox-add-ons.png" title="Firefox Add-ons" width="170" height="48" />](https://addons.mozilla.org/en-US/firefox/addon/auth-helper?src=external-github) [<img src="https://raw.githubusercontent.com/wiki/Authenticator-Extension/Authenticator/readme-images/microsoft-store.png" title="Microsoft Store" height="48">](https://microsoftedge.microsoft.com/addons/detail/ocglkepbibnalbgmbachknglpdipeoio)
+浏览器内的 TOTP/HOTP 双因素认证器。本仓库是
+[Authenticator-Extension/Authenticator](https://github.com/Authenticator-Extension/Authenticator)
+的安全维护 Fork。当前 Fork 版本为 `8.0.3`，基于上游 `8.0.2`，重点更新了依赖、构建链和输入安全，且保持原有账户数据与 OTP 逻辑兼容。
 
+> This is a security-maintained fork of Authenticator. It preserves the original
+> extension behavior while modernizing dependencies and hardening untrusted input.
 
-### Safari Edition
+## 当前状态
 
-A Safari edition of Authenticator is available on the App Store. We do not provide official support for the Safari edition.
+- Chrome/Edge 使用 Manifest V3；同时保留 Firefox 构建。
+- Vue 3 compatibility mode、Vuex 4、TypeScript 5 和 Webpack 5。
+- 支持标准 TOTP/HOTP、SHA-1/SHA-256/SHA-512、Steam/Battle.net 和 GOST。
+- 兼容 Microsoft 365 软件 OATH MFA：Base32 密钥、SHA-1、6 位数字、30 秒周期。
+- TOTP 使用 Unix 时间计算，与显示时区无关；过期的时钟偏差不会继续生效。
+- 默认在浏览器本地保存账户；可选密码保护使用 Argon2id。
+- 已移除 Vue 2、`argon2-browser`、`node-gost-crypto`、`qrcode-reader`、
+  `vue2-dragula` 等停止维护或不再适合使用的依赖。
+- 生产依赖执行 `npm audit --omit=dev` 时为 0 个已知漏洞。
+- 不再依赖 `otp.ee` 跳转地址，帮助、源码和问题反馈直接指向 GitHub。
 
-[<img width="150" alt="Download on the App Store" src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"/>](https://apps.apple.com/us/app/authen/id1602945200?mt=12)
+## 安装到 Chrome / Edge
 
-## Build Setup
+### 从源码构建
 
-``` bash
-# install development dependencies
-npm install
-# compile
-npm run [chrome, firefox, prod]
-```
+环境要求：Node.js 24、npm，以及用于运行扩展测试的 Chrome/Chromium。
 
-To reproduce a build:
-
-``` bash
+```bash
 npm ci
 npm run prod
 ```
 
-To reproduce a build for Safari, please follow contribution guidance in [Authenticator-Extension/Authen](https://github.com/Authenticator-Extension/Authen#how-to-contribute)
+构建输出：
 
-## Development (Chrome)
+- `release/chrome`：Chrome 可加载目录
+- `release/edge`：Edge 可加载目录
+- `release/firefox`：Firefox 可加载目录
 
-``` bash
-# install development dependencies
-npm install
-# compiles the Chrome extension to the `./test/chrome` directory
+Chrome 安装步骤：
+
+1. 打开 `chrome://extensions`。
+2. 启用“开发者模式”。
+3. 点击“加载已解压的扩展程序”。
+4. 选择 `release/chrome` 目录。
+
+Edge 使用 `edge://extensions` 并选择 `release/edge`，操作相同。
+
+> Chrome 不能直接把源码 ZIP 当作商店扩展安装。请先解压，再选择包含
+> `manifest.json` 的目录。
+
+### 官方商店版本
+
+Chrome、Firefox 和 Edge 商店中的同名扩展由原上游项目发布，不一定包含本
+Fork 的安全升级。需要本 Fork 的行为时，请使用上面的源码构建方式。
+
+## Microsoft 365 MFA
+
+本项目支持 Microsoft 365/Entra ID 的标准软件 OATH TOTP。登记时必须完成
+Microsoft 页面上的最终验证码确认步骤；仅扫描二维码并不代表认证器已经登记成功。
+
+建议参数：
+
+| 参数 | 值     |
+| ---- | ------ |
+| 类型 | TOTP   |
+| 密钥 | Base32 |
+| 算法 | SHA-1  |
+| 位数 | 6      |
+| 周期 | 30 秒  |
+
+若验证码不匹配，请先检查系统时间同步，而不是修改时区。验证码计算使用 Unix 时间，
+中国、日本、欧洲或其他时区在同一时刻应生成相同结果。
+
+## 云备份说明
+
+仓库不包含 Google Drive、Dropbox 或 OneDrive 的私有 OAuth 凭据。默认源码构建会
+显示警告；因为缺少 OAuth 客户端信息，这些云服务不可用。本地 OTP、加密、二维码
+导入和备份文件导入/导出不受影响。
+
+如需启用云备份，请注册自己的 OAuth 应用，并填写
+`src/models/credentials.ts` 和对应 Manifest 配置。不要提交客户端密钥或发布凭据。
+
+## 开发
+
+```bash
+# 安装锁定版本的依赖
+npm ci
+
+# 构建单个平台
+npm run chrome
+npm run firefox
+npm run edge
+
+# Chrome 监听构建，输出到 test/chrome
 npm run dev:chrome
-# load the unpacked extension from the `./test/chrome/ directory in Chrome
+
+# 在真实 Chrome/Chromium 中运行回归测试
+PUPPETEER_EXEC_PATH=/usr/bin/chromium npm test
+
+# 生产依赖安全审计
+npm audit --omit=dev
 ```
 
-Note that Windows users should download a tool like [Git Bash](https://git-scm.com/download/win) or [Cygwin](http://cygwin.com/) to build.
+测试覆盖 Microsoft 365/RFC 6238 时间边界、OTPAuth URI、HOTP counter、时钟偏差、
+GOST 兼容性、密码页面和主要菜单行为。
 
-## Acknowledgment
+更多开发规则见 [CONTRIBUTING.md](CONTRIBUTING.md)，版本变更见
+[CHANGELOG.md](CHANGELOG.md)。
 
-We would like to extend our heartfelt thanks to Laurent, the Chief Information Security Officer (CISO) of the University of Luxembourg, for the invaluable support and contribution to this project. During the development process, the CISO team provided critical security recommendations that helped us identify and address potential vulnerabilities, significantly enhancing the security and reliability of the project.
+## 安全与隐私
 
-We especially want to acknowledge the University of Luxembourg's information security team for their selfless contribution, which not only facilitated the progress of this project but also had a positive impact on the broader open-source community. We recognize that the success of open-source software depends heavily on collaboration and support from various stakeholders, and the involvement of the University of Luxembourg has allowed us to offer a more secure and dependable product to a wider audience.
+- 不要在 Issue、日志或截图中公开 OTP 密钥、二维码、恢复码或备份密码。
+- 扫描二维码和生成验证码均在本地完成。
+- 生产包不包含测试页面或源码映射。
+- 安全问题请按照 [SECURITY.md](SECURITY.md) 私下报告。
 
-We understand that while open-source software is free, maintaining and improving these projects requires significant resources. The University of Luxembourg’s information security team has demonstrated their strong commitment to the open-source community, contributing not just within their university but to users and developers globally. We hope this acknowledgment will help them continue to secure the support and resources necessary to further advance open-source initiatives.
+## 上游与许可
 
-Once again, we express our sincere gratitude to the University of Luxembourg's CISO team for their valuable advice and assistance.
+本 Fork 保留原项目的 MIT 许可和贡献者历史。上游项目：
+[Authenticator-Extension/Authenticator](https://github.com/Authenticator-Extension/Authenticator)。
+
+项目仍感谢卢森堡大学信息安全团队对原项目安全工作的支持，以及所有原项目维护者、
+翻译者和贡献者。

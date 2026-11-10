@@ -1,7 +1,7 @@
 contact_links:
   - name: Feature Request
-    url: https://github.com/Authenticator-Extension/Authenticator/discussions/new
+    url: https://github.com/rocky-xie/Authenticator/discussions/new/choose
     about: Please request features here.
   - name: Translation Issues
-    url: https://crowdin.com/project/authenticator-firefox
+    url: https://crowdin.com/project/authenticator
     about: Please correct translation issues on Crowdin.

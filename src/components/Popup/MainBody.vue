@@ -45,9 +45,7 @@
           <a
             href="#"
             v-on:click="
-              openLink(
-                'https://github.com/Authenticator-Extension/Authenticator#readme',
-              )
+              openLink('https://github.com/rocky-xie/Authenticator#readme')
             "
             >{{ i18n.learn_more }}</a
           >

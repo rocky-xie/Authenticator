@@ -1,11 +1,35 @@
 # Security Policy
 
-## Supported Versions
+## Supported version
 
-We support the latest versions published on the Chrome, Firefox, and Edge extension stores.
+This fork supports the latest commit on the `dev` branch and release artifacts
+published by [rocky-xie/Authenticator](https://github.com/rocky-xie/Authenticator).
+The current fork version is 8.0.3 and is based on upstream extension version 8.0.2.
 
-## Reporting a Vulnerability
+Browser-store builds published by the upstream project have a separate release
+and support lifecycle.
 
-Report potential vulnerabilities privately via [this form](https://github.com/Authenticator-Extension/Authenticator/security/advisories/new).
-Where appropriate, include a proof-of-concept and reproduction steps.
-We strive to provide an initial response within five days, but as this is a volunteer-run project, we make no guarantees.
+## Reporting a vulnerability
+
+Report a potential vulnerability privately through
+[GitHub Security Advisories](https://github.com/rocky-xie/Authenticator/security/advisories/new).
+Do not open a public issue containing an OTP secret, QR code, recovery code,
+backup file, password, OAuth credential, or working exploit.
+
+Please include affected versions, reproduction steps, impact, and a minimal
+proof of concept where appropriate. This is a volunteer-maintained fork, so no
+fixed response-time guarantee is offered.
+
+## Security checks
+
+Before a release, maintainers should run:
+
+```bash
+npm ci
+npm audit --omit=dev
+PUPPETEER_EXEC_PATH=/usr/bin/chromium npm test
+npm run prod
+```
+
+Production packages must not contain test pages, source maps, private OAuth
+credentials, signing keys, or decrypted backup data.

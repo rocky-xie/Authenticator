@@ -1,17 +1,17 @@
-name: Tagging
+name: Tag release branch
 
 on:
   push:
-    branches: [ release ]
+    branches: [release]
+
+permissions:
+  contents: write
 
 jobs:
-  tagging:
+  tag:
     runs-on: ubuntu-latest
-    name: Release tagging
-    
     steps:
-      - uses: actions/checkout@v2
-        
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - run: bash scripts/tag.sh
-        env:
-          DEPLOY_KEY_PASSWORD: ${{ secrets.DEPLOY_KEY_PASSWORD }}

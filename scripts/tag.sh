@@ -1,18 +1,16 @@
 #!/bin/bash
-# This script is used by travis to auto tag our releases
 
-# Configure git
-git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git config --global user.name "github-actions[bot]"
-git remote set-url origin git@github.com:${GITHUB_REPOSITORY}.git
-gpg --quiet --batch --yes --decrypt --passphrase="$DEPLOY_KEY_PASSWORD" \
-  --output $GITHUB_WORKSPACE/scripts/deploy-key $GITHUB_WORKSPACE/scripts/deploy-key.gpg
-chmod 600 $GITHUB_WORKSPACE/scripts/deploy-key
-eval `ssh-agent -s` &> /dev/null
-ssh-add $GITHUB_WORKSPACE/scripts/deploy-key &> /dev/null
+set -euo pipefail
 
-# Create and push tag
-export GIT_TAG=v$(grep -m 1 "\"version\"" $GITHUB_WORKSPACE/manifests/manifest-chrome.json | sed -r 's/^ *//;s/.*: *"//;s/",?//')
-git checkout ${GITHUB_REF##*/}
-git tag $GIT_TAG -a -m "Automatic tag from run $GITHUB_RUN_ID"
-git push origin $GIT_TAG
+VERSION=$(node -p "require('./manifests/manifest-chrome.json').version")
+GIT_TAG="v${VERSION}"
+
+if git rev-parse "$GIT_TAG" >/dev/null 2>&1; then
+    echo "Tag $GIT_TAG already exists; nothing to do."
+    exit 0
+fi
+
+git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+git config user.name "github-actions[bot]"
+git tag "$GIT_TAG" -a -m "Release $GIT_TAG"
+git push origin "$GIT_TAG"

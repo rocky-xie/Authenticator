@@ -57,9 +57,7 @@
         </p>
         <p
           v-bind:title="i18n.source"
-          v-on:click="
-            openLink('https://github.com/Authenticator-Extension/Authenticator')
-          "
+          v-on:click="openLink('https://github.com/rocky-xie/Authenticator')"
         >
           <span><IconCode /></span>{{ i18n.source }}
         </p>
@@ -122,8 +120,7 @@ export default defineComponent({
       this.$store.commit("style/hideMenu");
     },
     openHelp() {
-      let url =
-        "https://github.com/Authenticator-Extension/Authenticator/issues";
+      let url = "https://github.com/rocky-xie/Authenticator/issues";
 
       const feedbackURL = this.$store.state.menu.feedbackURL;
       if (typeof feedbackURL === "string" && feedbackURL) {

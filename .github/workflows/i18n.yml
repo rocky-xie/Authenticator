@@ -1,17 +1,20 @@
-name: i18n
+name: Validate translations
 
 on:
   push:
-    branches: [ dev ]
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+permissions:
+  contents: read
 
 jobs:
-  i18n-strings:
+  validate:
     runs-on: ubuntu-latest
-    name: Process new i18n strings
-    
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - run: bash scripts/i18n.sh
-        env:
-          DEPLOY_KEY_PASSWORD: ${{ secrets.DEPLOY_KEY_PASSWORD }}

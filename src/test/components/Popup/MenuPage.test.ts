@@ -83,7 +83,7 @@ describe("MenuPage", () => {
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
         chrome.tabs.create.withArgs({
-          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+          url: "https://github.com/rocky-xie/Authenticator/issues",
         }).called,
         "Tab create should be called with the project issue tracker URL",
       );
@@ -96,7 +96,7 @@ describe("MenuPage", () => {
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
         chrome.tabs.create.withArgs({
-          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+          url: "https://github.com/rocky-xie/Authenticator/issues",
         }).called,
         "Tab create should be called with the project issue tracker URL",
       );
@@ -109,7 +109,7 @@ describe("MenuPage", () => {
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
         chrome.tabs.create.withArgs({
-          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+          url: "https://github.com/rocky-xie/Authenticator/issues",
         }).called,
         "Tab create should be called with the project issue tracker URL",
       );
@@ -120,7 +120,7 @@ describe("MenuPage", () => {
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
         chrome.tabs.create.withArgs({
-          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+          url: "https://github.com/rocky-xie/Authenticator/issues",
         }).called,
         "Tab create should be called with the project issue tracker URL",
       );

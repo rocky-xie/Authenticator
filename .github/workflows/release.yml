@@ -2,45 +2,27 @@ name: Release
 
 on:
   push:
-    tags: 
-      - 'v*'
+    tags: ["v*"]
+
+permissions:
+  contents: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    name: Publish release build
-    
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v2
-      
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v2.1.2
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "1"
+      - name: Build release archive
         run: bash scripts/release.sh
+      - name: Publish GitHub release
+        run: gh release create "$GITHUB_REF_NAME" release.tar.gz --generate-notes
         env:
-          CREDS_FILE_PASSWORD: ${{ secrets.CREDS_FILE_PASSWORD }}
-      
-      - name: Create a release
-        id: create_release
-        uses: actions/create-release@v1.1.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset 
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release.tar.gz
-          asset_name: release.tar.gz
-          asset_content_type: application/gzip
+          GH_TOKEN: ${{ github.token }}

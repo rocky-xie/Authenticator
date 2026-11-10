@@ -40,7 +40,7 @@ if ! [[ $CREDS =~ $CREDREGEX ]] ; then
     fi
 fi
 
-if ! [[ $REMOTE = *"github.com/Authenticator-Extension/Authenticator"* || ${CI:-} ]] ; then
+if ! [[ $REMOTE = *"github.com/Authenticator-Extension/Authenticator"* || $REMOTE = *"github.com/rocky-xie/Authenticator"* || ${CI:-} ]] ; then
     echo
     echo -e "\e[7m\033[33mNotice\033[0m"
     echo
