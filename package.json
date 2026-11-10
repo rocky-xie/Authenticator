@@ -17,7 +17,10 @@
     "type": "git",
     "url": "git+https://github.com/rocky-xie/Authenticator.git"
   },
-  "author": "Authenticator Extension",
+  "author": "Authenticator Extension contributors",
+  "contributors": [
+    "rocky-xie"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/rocky-xie/Authenticator/issues"

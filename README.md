@@ -103,6 +103,13 @@ npm run prod
 
 安全问题请按照 [SECURITY.md](SECURITY.md) 私下报告。
 
-## License
+## 来源、修改与许可
 
-项目采用 MIT License，并保留原项目及第三方开源组件的版权和许可信息。
+本项目是开源项目 [Authenticator Extension](https://github.com/Authenticator-Extension/Authenticator) 的衍生维护版本，当前仓库位于 [rocky-xie/Authenticator](https://github.com/rocky-xie/Authenticator)。本仓库不是 Microsoft 官方产品，也不代表原项目维护者发布的官方版本。
+
+- 原始项目版权：`Copyright (c) 2017 Authenticator Extension`。
+- 当前维护版本在原项目基础上进行了依赖升级、安全修复、构建整理、Microsoft 365 智能辅助填充和界面调整。
+- 项目代码依照 [MIT License](LICENSE) 发布。复制、修改、发布或分发本项目及其实质性部分时，必须一并保留原版权声明和 MIT 许可声明。
+- 上游来源和本维护版本的说明见 [NOTICE](NOTICE)；第三方组件的许可信息会生成到扩展内的 `view/licenses.html`。
+
+MIT License 允许使用、复制、修改、合并、发布、分发、再许可和销售软件副本，但软件按“原样”提供，不附带任何明示或默示担保。

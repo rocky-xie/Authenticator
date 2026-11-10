@@ -65,7 +65,7 @@ fi
 
 postCompile () {
     mkdir $1
-    cp -r dist css images _locales LICENSE view $1
+    cp -r dist css images _locales LICENSE NOTICE view $1
 
     if [[ $PLATFORM == "test" ]]; then
         cp manifests/manifest-$1-testing.json $1/manifest.json

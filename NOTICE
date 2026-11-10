@@ -1,0 +1,20 @@
+Authenticator - Source and Attribution Notice
+
+This project is a modified and maintained derivative of Authenticator Extension:
+https://github.com/Authenticator-Extension/Authenticator
+
+Original project copyright:
+Copyright (c) 2017 Authenticator Extension
+
+Maintained derivative:
+https://github.com/rocky-xie/Authenticator
+
+The maintained version includes dependency upgrades, security fixes, build and
+documentation cleanup, Microsoft 365 smart autofill, and user-interface changes.
+It is not an official Microsoft product and is not an official release from the
+upstream maintainers.
+
+The project is distributed under the MIT License. The original copyright notice
+and the MIT permission notice are preserved in the accompanying LICENSE file.
+Third-party software remains subject to its respective license terms; generated
+notices are included in view/licenses.html in production builds.
