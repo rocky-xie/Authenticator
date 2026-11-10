@@ -25,14 +25,14 @@ declare global {
   }
 }
 interface TestDisplay {
-  [key: string]: TestDisplay | StrippedTestResults
+  [key: string]: TestDisplay | StrippedTestResults;
 }
 
 const colors = {
   reset: "\x1b[0m",
   green: "\x1b[32m",
   red: "\x1b[31m",
-}
+};
 
 async function runTests() {
   const systemBrowserPaths = [
@@ -43,13 +43,13 @@ async function runTests() {
   ];
   const executablePath =
     process.env.PUPPETEER_EXEC_PATH ||
-    systemBrowserPaths.find(candidate => fs.existsSync(candidate));
+    systemBrowserPaths.find((candidate) => fs.existsSync(candidate));
 
   const puppeteerArgs: string[] = [
     `--load-extension=${path.resolve(__dirname, "../test/chrome")}`,
     // for CI
     "--no-sandbox",
-    "--lang=en-US,en"
+    "--lang=en-US,en",
   ];
 
   const browser = await puppeteer.launch({
@@ -63,20 +63,22 @@ async function runTests() {
 
   // by setting this env var, console logging works for both components and testing
   if (process.env.ENABLE_CONSOLE) {
-    mochaPage.on("console", consoleMessage => console.log(consoleMessage.text()));
+    mochaPage.on("console", (consoleMessage) =>
+      console.log(consoleMessage.text()),
+    );
   }
-  mochaPage.on("pageerror", error => console.error(error));
+  mochaPage.on("pageerror", (error) => console.error(error));
 
   await mochaPage.goto(
-    "chrome-extension://bhghoamapcdpbohphigoooaddinpkbai/view/test.html"
+    "chrome-extension://bhghoamapcdpbohphigoooaddinpkbai/view/test.html",
   );
 
   await mochaPage.waitForFunction(
     () => window.__mocha_test_results__?.completed === true,
-    { timeout: 30000 }
+    { timeout: 30000 },
   );
   const results: { testResults: MochaTestResults } = await mochaPage.evaluate(
-    () => ({ testResults: window.__mocha_test_results__ })
+    () => ({ testResults: window.__mocha_test_results__ }),
   );
 
   let failedTest = false;
@@ -85,7 +87,7 @@ async function runTests() {
     for (const test of results.testResults.tests) {
       const tmp: TestDisplay = {};
       test.path.reduce((acc, current, index) => {
-        return acc[current] = test.path.length - 1 === index ? test : {}
+        return (acc[current] = test.path.length - 1 === index ? test : {});
       }, tmp);
       display = merge(display, tmp);
     }
@@ -102,7 +104,7 @@ async function runTests() {
           case "failed":
             console.log(`${colors.red}✗ ${test.title}${colors.reset}`);
             if (test.err) {
-              console.log(test.err)
+              console.log(test.err);
             }
             failedTest = true;
             break;
@@ -111,18 +113,18 @@ async function runTests() {
             break;
         }
       } else {
-        console.log(key)
+        console.log(key);
         console.group();
         printDisplayTests(display[key]);
       }
     }
     console.groupEnd();
-  }
+  };
   printDisplayTests(display);
   process.exit(failedTest ? 1 : 0);
 }
 
-runTests().catch(e => {
+runTests().catch((e) => {
   console.error(e);
   process.exit(1);
 });

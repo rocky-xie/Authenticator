@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, "..");
 const lock = require(path.join(root, "node_modules/.package-lock.json"));
 const template = fs.readFileSync(
   path.join(root, "scripts/licenses-template.html"),
-  "utf8"
+  "utf8",
 );
 
 const escapeHtml = (value) =>
@@ -57,13 +57,13 @@ const licenseHtml = Array.from(packages.values())
       ? `<a href="${escapeHtml(pkg.homepage)}">${label}</a>`
       : label;
     return `    <h3>${title}</h3>\n    <blockquote>${escapeHtml(
-      pkg.licenseText
+      pkg.licenseText,
     )}</blockquote>`;
   })
   .join("\n");
 
 const output = template.replace(
   /\s*{{#renderLicenses}}[\s\S]*?{{\/renderLicenses}}/,
-  `\n${licenseHtml}`
+  `\n${licenseHtml}`,
 );
 fs.writeFileSync(path.join(root, "view/licenses.html"), output);
