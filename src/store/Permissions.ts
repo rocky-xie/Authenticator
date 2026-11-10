@@ -141,6 +141,16 @@ const permissions: Permission[] = [
       },
     ],
   },
+  {
+    id: "http://*/*",
+    description: chrome.i18n.getMessage("permission_smart_autofill_sites"),
+    revocable: true,
+  },
+  {
+    id: "https://*/*",
+    description: chrome.i18n.getMessage("permission_smart_autofill_sites"),
+    revocable: true,
+  },
 ];
 
 export class Permissions implements Module {

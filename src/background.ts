@@ -13,9 +13,10 @@ import {
   getSiteName,
   getMatchedEntries,
   getCurrentTab,
+  getSiteNameFromUrl,
   okToInjectContentScript,
 } from "./utils";
-import { CodeState } from "./models/otp";
+import { CodeState, OTPType } from "./models/otp";
 
 import { getOTPAuthPerLineFromOPTAuthMigration } from "./models/migration";
 import { isChrome, isFirefox } from "./browser";
@@ -24,7 +25,34 @@ import { parseOTPAuthURI } from "./models/otpauth-uri";
 
 let contentTab: chrome.tabs.Tab | undefined;
 
-chrome.runtime.onMessage.addListener(async (message, sender) => {
+const SMART_AUTOFILL_SCRIPT_ID = "authenticator-smart-autofill-v1";
+const LEGACY_SMART_AUTOFILL_SCRIPT_IDS = ["authenticator-smart-autofill-v9"];
+const SMART_AUTOFILL_ORIGINS = ["http://*/*", "https://*/*"];
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  handleRuntimeMessage(message, sender).then(sendResponse, () =>
+    sendResponse(false),
+  );
+  return true;
+});
+
+async function handleRuntimeMessage(
+  message: Record<string, any>,
+  sender: chrome.runtime.MessageSender,
+) {
+  if (message.action === "getSmartAutofillCandidates") {
+    return getSmartAutofillCandidates(sender);
+  }
+  if (message.action === "getSmartAutofillCode") {
+    return getSmartAutofillCode(sender, String(message.hash || ""));
+  }
+  if (message.action === "configureSmartAutofill") {
+    return configureSmartAutofill(message.enabled === true);
+  }
+  if (message.action === "refreshSmartAutofillRegistration") {
+    return restoreSmartAutofillRegistration();
+  }
+
   await UserSettings.updateItems();
 
   if (message.action === "getCapture") {
@@ -63,7 +91,7 @@ chrome.runtime.onMessage.addListener(async (message, sender) => {
 
   // https://stackoverflow.com/a/56483156
   return true;
-});
+}
 
 chrome.alarms.onAlarm.addListener(() => {
   chrome.storage.session.set({ cachedPassphrase: null, cachedKeyId: null });
@@ -515,3 +543,139 @@ async function updateContextMenu() {
 }
 
 updateContextMenu();
+
+async function getSmartAutofillCandidates(
+  sender: chrome.runtime.MessageSender,
+) {
+  const context = await getSmartAutofillContext(sender);
+  if ("error" in context) {
+    return context;
+  }
+  return {
+    candidates: context.entries.map((entry) => ({
+      hash: entry.hash,
+      label:
+        [entry.issuer.split("::")[0], entry.account]
+          .filter(Boolean)
+          .join(" — ") || chrome.i18n.getMessage("extShortName"),
+    })),
+  };
+}
+
+async function getSmartAutofillCode(
+  sender: chrome.runtime.MessageSender,
+  hash: string,
+) {
+  const context = await getSmartAutofillContext(sender);
+  if ("error" in context) {
+    return context;
+  }
+  const entry = context.entries.find((candidate) => candidate.hash === hash);
+  if (!entry) {
+    return { error: "missing" };
+  }
+
+  const { cachedPassphrase = "", cachedKeyId = "" } = await getCachedSecrets();
+  entry.applyEncryption(
+    new Encryption(cachedPassphrase || "", cachedKeyId || ""),
+  );
+  entry.generate();
+  if (entry.code === CodeState.Encrypted) {
+    return { error: "locked" };
+  }
+  if (entry.code === CodeState.Invalid || !/^\d{6,8}$/.test(entry.code)) {
+    return { error: "missing" };
+  }
+  return { code: entry.code };
+}
+
+async function getSmartAutofillContext(sender: chrome.runtime.MessageSender) {
+  await UserSettings.updateItems();
+  if (UserSettings.items.smartAutofill !== true) {
+    return { error: "disabled" as const };
+  }
+
+  const pageUrl = sender.url || sender.tab?.url || "";
+  if (!/^https?:\/\//i.test(pageUrl)) {
+    return { error: "missing" as const };
+  }
+
+  const entries = (await EntryStorage.get()).filter(
+    (entry) => entry.type === OTPType.totp || entry.type === OTPType.hex,
+  );
+  const title =
+    sender.tab?.title?.replace(/[^a-z0-9]/gi, "").toLowerCase() || null;
+  const matches = getMatchedEntries(
+    getSiteNameFromUrl(title, pageUrl),
+    entries,
+  );
+
+  // Shared identity pages (including Microsoft tenant login pages) cannot
+  // reliably reveal the tenant/issuer. When no issuer matches, let the user
+  // choose from their TOTP accounts without exposing any secret or code.
+  return { entries: matches && matches.length ? matches : entries };
+}
+
+async function configureSmartAutofill(enabled: boolean) {
+  if (!chrome.scripting?.registerContentScripts) {
+    return false;
+  }
+
+  try {
+    await chrome.scripting.unregisterContentScripts({
+      ids: [SMART_AUTOFILL_SCRIPT_ID, ...LEGACY_SMART_AUTOFILL_SCRIPT_IDS],
+    });
+  } catch {
+    // The script was not registered yet.
+  }
+
+  if (!enabled) {
+    return true;
+  }
+
+  const hasBroadAccess = await chrome.permissions.contains({
+    origins: SMART_AUTOFILL_ORIGINS,
+  });
+  if (!hasBroadAccess) {
+    // Microsoft global and China login pages are statically declared in the
+    // manifest and remain available without broad site access.
+    return true;
+  }
+
+  await chrome.scripting.registerContentScripts([
+    {
+      id: SMART_AUTOFILL_SCRIPT_ID,
+      matches: SMART_AUTOFILL_ORIGINS,
+      js: ["dist/smart-autofill.js"],
+      runAt: "document_idle",
+      allFrames: true,
+      persistAcrossSessions: true,
+    },
+  ]);
+
+  const tab = await getCurrentTab();
+  if (tab && okToInjectContentScript(tab)) {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        files: ["/dist/smart-autofill.js"],
+      });
+    } catch {
+      // Restricted browser pages and frames cannot be scripted.
+    }
+  }
+  return true;
+}
+
+async function restoreSmartAutofillRegistration() {
+  await UserSettings.updateItems();
+  await configureSmartAutofill(UserSettings.items.smartAutofill === true);
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  void restoreSmartAutofillRegistration();
+});
+chrome.runtime.onStartup.addListener(() => {
+  void restoreSmartAutofillRegistration();
+});
+void restoreSmartAutofillRegistration();

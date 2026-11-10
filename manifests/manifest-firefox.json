@@ -2,12 +2,12 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "__MSG_extShortName__",
-  "version": "8.0.3",
+  "version": "1.0.0",
   "default_locale": "en",
   "description": "__MSG_extDesc__",
   "browser_specific_settings": {
     "gecko": {
-      "id": "authenticator@mymindstorm",
+      "id": "authenticator@rocky-xie.github.io",
       "strict_min_version": "126.0"
     }
   },
@@ -27,6 +27,23 @@
   "background": {
     "scripts": ["dist/background.js"]
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://login.microsoftonline.com/*",
+        "https://*.microsoftonline.com/*",
+        "https://login.live.com/*",
+        "https://account.live.com/*",
+        "https://mysignins.microsoft.com/*",
+        "https://login.chinacloudapi.cn/*",
+        "https://login.partner.microsoftonline.cn/*",
+        "https://*.partner.microsoftonline.cn/*"
+      ],
+      "js": ["dist/smart-autofill.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
   "commands": {
     "_execute_action": {},
     "scan-qr": {
@@ -42,6 +59,7 @@
   },
   "permissions": ["activeTab", "storage", "identity", "alarms", "scripting"],
   "optional_permissions": ["clipboardWrite"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "host_permissions": [
     "https://www.google.com/",
     "https://*.dropboxapi.com/*",

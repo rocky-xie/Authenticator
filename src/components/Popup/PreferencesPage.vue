@@ -31,6 +31,17 @@
     </a-select-input>
     <a-toggle-input :label="i18n.use_autofill" v-model="useAutofill" />
     <a-toggle-input
+      :label="i18n.use_smart_autofill"
+      :checked="smartAutofill"
+      @change="configureSmartAutofill"
+    />
+    <p class="preference-help">
+      {{ i18n.smart_autofill_scope_hint }}
+      <a href="permissions.html" target="_blank">{{
+        i18n.manage_permissions
+      }}</a>
+    </p>
+    <a-toggle-input
       :label="i18n.browser_sync"
       v-model="browserSync"
       :disabled="storageArea"
@@ -93,6 +104,11 @@ export default defineComponent({
           "notification/alert",
           this.i18n.activate_auto_filter,
         );
+      },
+    },
+    smartAutofill: {
+      get(): boolean {
+        return this.$store.state.menu.smartAutofill;
       },
     },
     enableContextMenu: {
@@ -160,6 +176,16 @@ export default defineComponent({
     });
   },
   methods: {
+    async configureSmartAutofill(enabled: boolean) {
+      // Permission prompts steal focus and close toolbar popups. The switch
+      // only changes the feature state; optional all-site access is managed in
+      // the full permissions page instead.
+      this.$store.commit("menu/setSmartAutofill", enabled);
+      await chrome.runtime.sendMessage({
+        action: "configureSmartAutofill",
+        enabled,
+      });
+    },
     popOut() {
       let windowType;
       if (isFirefox) {

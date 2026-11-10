@@ -30,6 +30,7 @@ interface UserSettingsData {
   enableContextMenu?: boolean;
   encodedPhrase?: string;
   smartFilter?: boolean;
+  smartAutofill?: boolean;
   theme?: string;
   zoom?: number;
 }
@@ -210,7 +211,8 @@ type BooleanOption =
   | "oneDriveBusiness"
   | "oneDriveEncrypted"
   | "oneDriveRevoked"
-  | "smartFilter";
+  | "smartFilter"
+  | "smartAutofill";
 
 type NumberOption =
   | "autolock"
@@ -233,6 +235,7 @@ function isBooleanOption(key: string): key is BooleanOption {
     "oneDriveEncrypted",
     "oneDriveRevoked",
     "smartFilter",
+    "smartAutofill",
   ].includes(key);
 }
 

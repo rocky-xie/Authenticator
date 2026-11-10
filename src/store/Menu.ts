@@ -11,6 +11,7 @@ export class Menu implements Module {
         version: chrome.runtime.getManifest()?.version || "0.0.0",
         zoom: Number(UserSettings.items.zoom) || 100,
         useAutofill: UserSettings.items.autofill === true,
+        smartAutofill: UserSettings.items.smartAutofill === true,
         smartFilter: UserSettings.items.smartFilter === true,
         enableContextMenu: UserSettings.items.enableContextMenu === true,
         theme: UserSettings.items.theme || (isSafari ? "flat" : "normal"),
@@ -35,6 +36,11 @@ export class Menu implements Module {
         setAutofill(state: MenuState, useAutofill: boolean) {
           state.useAutofill = useAutofill;
           UserSettings.items.autofill = useAutofill;
+          UserSettings.commitItems();
+        },
+        setSmartAutofill(state: MenuState, smartAutofill: boolean) {
+          state.smartAutofill = smartAutofill;
+          UserSettings.items.smartAutofill = smartAutofill;
           UserSettings.commitItems();
         },
         setSmartFilter(state: MenuState, smartFilter: boolean) {

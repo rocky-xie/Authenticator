@@ -31,6 +31,7 @@ interface MenuState {
   zoom: number;
   autolock: number;
   useAutofill: boolean;
+  smartAutofill: boolean;
   smartFilter: boolean;
   enableContextMenu: boolean;
   theme: string;

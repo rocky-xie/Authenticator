@@ -28,7 +28,7 @@
         <p id="import_info">
           {{ i18n.otp_backup_inform }}
           <a
-            href="https://github.com/Authenticator-Extension/Authenticator/wiki"
+            href="https://github.com/rocky-xie/Authenticator#backup-and-restore"
             target="_blank"
             >{{ i18n.otp_backup_learn }}</a
           >

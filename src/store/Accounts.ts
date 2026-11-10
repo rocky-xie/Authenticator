@@ -494,7 +494,7 @@ export class Accounts implements Module {
 
             await state.dispatch("updateEntries");
 
-            // https://github.com/Authenticator-Extension/Authenticator/issues/412
+            // Clear Chromium sync tombstones after completing key migration.
             if (isChromium) {
               await BrowserStorage.clearLogs();
             }

@@ -2,6 +2,6 @@ contact_links:
   - name: Feature Request
     url: https://github.com/rocky-xie/Authenticator/discussions/new/choose
     about: Please request features here.
-  - name: Translation Issues
-    url: https://crowdin.com/project/authenticator
-    about: Please correct translation issues on Crowdin.
+  - name: Security Reports
+    url: https://github.com/rocky-xie/Authenticator/security/advisories/new
+    about: Report security issues privately. Never publish OTP secrets or backup data.

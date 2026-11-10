@@ -520,5 +520,45 @@
   },
   "activate_auto_filter": {
     "message": "경고: 스마트 필터는 도메인 이름과 계정을 대략적으로만 일치시켜요. 코드를 입력하기 전에 항상 올바른 웹 사이트에 있는지 확인하세요!"
+  },
+  "use_smart_autofill": {
+    "message": "Smart autofill icon on verification fields",
+    "description": "Show an Authenticator icon beside detected verification-code fields; filling never submits the form"
+  },
+  "smart_autofill_button": {
+    "message": "Fill with Authenticator",
+    "description": "Accessible name for the smart autofill button"
+  },
+  "smart_autofill_scope_hint": {
+    "message": "Microsoft sign-in pages work by default. Grant optional access for other websites in",
+    "description": "Explains smart autofill permission scope"
+  },
+  "manage_permissions": {
+    "message": "Permissions",
+    "description": "Link to the permissions page"
+  },
+  "smart_autofill_site_access": {
+    "message": "Smart autofill on other websites",
+    "description": "Heading for optional smart autofill host access"
+  },
+  "smart_autofill_site_access_description": {
+    "message": "Microsoft global and China sign-in pages are always supported. Grant this optional permission only if you want the icon on other HTTP and HTTPS websites.",
+    "description": "Description for optional smart autofill host access"
+  },
+  "permission_grant": {
+    "message": "Grant access",
+    "description": "Grant an optional permission"
+  },
+  "permission_status_granted": {
+    "message": "Access to other websites is enabled.",
+    "description": "Smart autofill host access is granted"
+  },
+  "permission_status_microsoft_only": {
+    "message": "Only the built-in Microsoft sign-in domains are enabled.",
+    "description": "Smart autofill is limited to Microsoft domains"
+  },
+  "permission_smart_autofill_sites": {
+    "message": "Detect verification-code fields on websites for smart assisted filling.",
+    "description": "Optional all-site permission description"
   }
 }

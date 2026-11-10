@@ -297,6 +297,46 @@
     "message": "启用自动填充",
     "description": "Use Autofill"
   },
+  "use_smart_autofill": {
+    "message": "启用验证码输入框智能辅助填充",
+    "description": "识别验证码输入框并显示认证器图标；点击只填充，不自动提交"
+  },
+  "smart_autofill_button": {
+    "message": "使用认证器填充",
+    "description": "智能辅助填充按钮的无障碍名称"
+  },
+  "smart_autofill_scope_hint": {
+    "message": "微软登录页默认可用；如需支持其他网站，请前往",
+    "description": "说明智能辅助填充的权限范围"
+  },
+  "manage_permissions": {
+    "message": "权限管理",
+    "description": "权限管理页面链接"
+  },
+  "smart_autofill_site_access": {
+    "message": "在其他网站启用智能辅助填充",
+    "description": "智能辅助填充可选网站权限标题"
+  },
+  "smart_autofill_site_access_description": {
+    "message": "微软全球版和中国版登录页始终受到支持。仅当需要在其他 HTTP/HTTPS 网站显示填充图标时授予此可选权限。",
+    "description": "智能辅助填充可选网站权限说明"
+  },
+  "permission_grant": {
+    "message": "授予权限",
+    "description": "授予可选权限"
+  },
+  "permission_status_granted": {
+    "message": "已经允许在其他网站使用智能辅助填充。",
+    "description": "已授予智能辅助填充网站权限"
+  },
+  "permission_status_microsoft_only": {
+    "message": "当前仅启用内置的微软登录域名。",
+    "description": "智能辅助填充仅限微软域名"
+  },
+  "permission_smart_autofill_sites": {
+    "message": "识别网页中的验证码输入框并提供智能辅助填充。",
+    "description": "智能辅助填充可选网站权限说明"
+  },
   "use_high_contrast": {
     "message": "使用高对比度",
     "description": "Use High Contrast"

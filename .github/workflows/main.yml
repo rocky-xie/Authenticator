@@ -30,8 +30,8 @@ jobs:
           PUPPETEER_SKIP_DOWNLOAD: "1"
       - name: Check formatting
         run: npx prettier --check src sass/*.scss scripts/*.js scripts/*.ts
-      - name: Audit production dependencies
-        run: npm audit --omit=dev
+      - name: Audit dependencies
+        run: npm audit
       - name: Run browser regression tests
         run: xvfb-run --auto-servernum npm test
         env:

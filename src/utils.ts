@@ -19,6 +19,10 @@ export async function getSiteName() {
     url = tab.url ?? null;
   }
 
+  return getSiteNameFromUrl(title, url);
+}
+
+export function getSiteNameFromUrl(title: string | null, url: string | null) {
   if (!url) {
     return [title, null];
   }
@@ -118,6 +122,24 @@ function isMatchedEntry(
   const siteNameFromHost = siteName[1] || "";
   const siteHost = siteName[2] || "";
 
+  // Microsoft hosts are shared by every tenant, so the hostname itself does
+  // not contain the issuer from a user's QR code. Treat the well-known global
+  // and 21Vianet identity endpoints as aliases for Microsoft issuers.
+  if (isMicrosoftIdentityHost(siteHost)) {
+    const microsoftIssuerAliases = [
+      "microsoft",
+      "office",
+      "office365",
+      "outlook",
+      "azure",
+      "entra",
+      "live",
+    ];
+    if (microsoftIssuerAliases.some((alias) => issuer.indexOf(alias) !== -1)) {
+      return true;
+    }
+  }
+
   if (issuerHostMatches.length > 1) {
     if (siteHost && siteHost.indexOf(issuerHostMatches[1]) !== -1) {
       return true;
@@ -134,6 +156,19 @@ function isMatchedEntry(
   }
 
   return false;
+}
+
+export function isMicrosoftIdentityHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  return [
+    "login.microsoftonline.com",
+    "login.live.com",
+    "account.live.com",
+    "mysignins.microsoft.com",
+    "login.chinacloudapi.cn",
+    "login.partner.microsoftonline.cn",
+    "portal.partner.microsoftonline.cn",
+  ].some((domain) => host === domain || host.endsWith(`.${domain}`));
 }
 
 export async function getCurrentTab() {

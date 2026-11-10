@@ -1,11 +1,10 @@
 # Contributing
 
-Development happens on the `dev` branch. Keep changes focused, preserve existing
-stored-account compatibility, and never commit real OTP secrets or OAuth credentials.
+开发分支为 `dev`。变更应保持账户数据、加密格式和 OTP 计算兼容，不得提交真实密钥或云服务凭据。
 
 ## Setup
 
-Use Node.js 24 and npm:
+使用 Node.js 24：
 
 ```bash
 npm ci
@@ -14,26 +13,19 @@ npm ci
 ## Required checks
 
 ```bash
-npx prettier --check "src/**/*.{ts,vue}" "sass/**/*.scss" "scripts/*.{js,ts}"
-npm audit --omit=dev
-PUPPETEER_EXEC_PATH=/usr/bin/chromium npm test
+npx prettier --check src sass scripts
+npx tsc --noEmit
+npm test
+npm audit
 npm run prod
 ```
 
-Set `PUPPETEER_EXEC_PATH` to the Chrome or Chromium executable available on your
-system. Production builds may warn that cloud-provider credentials are missing;
-that is expected for public source builds.
-
-## OTP compatibility
-
-Changes to OTP generation or import must include regression tests. At minimum,
-retain RFC 4226/6238 behavior, Microsoft 365's common SHA-1/6-digit/30-second
-profile, timezone independence, existing GOST vectors, and stored-data compatibility.
+生产构建提示缺少云服务 OAuth 凭据属于公开源码的预期行为。
 
 ## Pull requests
 
-- Target `dev`.
-- Describe user-visible behavior and security impact.
-- Update `README.md` and `CHANGELOG.md` when behavior or dependencies change.
-- Do not include generated `release/`, `dist/`, `chrome/`, `edge/`, or `firefox/`
-  directories.
+- 目标分支使用 `dev`。
+- 说明用户可见行为、权限变化和安全影响。
+- OTP、导入、存储或加密变更必须增加回归测试。
+- 行为变化应同步更新 `README.md` 和 `CHANGELOG.md`。
+- 不提交生成的 `release/`、`dist/`、`chrome/`、`edge/`、`firefox/` 或真实备份文件。

@@ -7,7 +7,6 @@
 #   'chrome', 'firefox', 'edge', 'test', or 'prod'
 
 PLATFORM=$1
-REMOTE=$(git config --get remote.origin.url || true)
 CREDS=$(cat ./src/models/credentials.ts | tr -d '\n')
 CREDREGEX='^.*".+".*".+".*".+".*".+".*".+".*$'
 set -e
@@ -37,19 +36,6 @@ if ! [[ $CREDS =~ $CREDREGEX ]] ; then
         exit 1
     else
         echo -e "\e[7m\033[33mWarning: Cloud backup providers are disabled because credentials.ts is incomplete\033[0m"
-    fi
-fi
-
-if ! [[ $REMOTE = *"github.com/Authenticator-Extension/Authenticator"* || $REMOTE = *"github.com/rocky-xie/Authenticator"* || ${CI:-} ]] ; then
-    echo
-    echo -e "\e[7m\033[33mNotice\033[0m"
-    echo
-    echo -e "Thanks for forking Authenticator! If you plan on redistributing your own version of Authenticator please generate your own API keys and put them in ./src/models/credentials.ts and ./manifest-chrome.json"
-    echo "Clear this warning by commenting it out in ./scripts/build.sh"
-    echo
-    if [[ -t 0 ]]; then
-        read -rsp $'Press any key to continue...\n' -n1 key
-        echo
     fi
 fi
 
@@ -91,8 +77,6 @@ postCompile () {
         cp manifests/schema-chrome.json $1/schema.json
     fi
 
-    cp manifests/manifest-pwa.json $1/manifest-pwa.json
-
     if [[ $PLATFORM != "test" ]]; then
         rm -f "$1/view/test.html" "$1/css/mocha.css" \
             "$1/css/content.css.map" "$1/css/import.css.map" \
@@ -109,9 +93,8 @@ if [[ $PLATFORM = "prod" ]]; then
     mv chrome firefox edge release
 elif [[ $PLATFORM = "test" ]]; then
     postCompile "chrome"
-    postCompile "firefox"
     mkdir test
-    mv chrome firefox test
+    mv chrome test
 else
     postCompile $PLATFORM
 fi

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Authenticator: 2FA Client",
-    "version": "8.0.3",
+    "version": "1.0.0",
     "default_locale": "en",
     "description": "__MSG_extDesc__",
     "icons": {
@@ -42,6 +42,23 @@
     "background": {
         "service_worker": "dist/background.js"
     },
+    "content_scripts": [
+        {
+            "matches": [
+                "https://login.microsoftonline.com/*",
+                "https://*.microsoftonline.com/*",
+                "https://login.live.com/*",
+                "https://account.live.com/*",
+                "https://mysignins.microsoft.com/*",
+                "https://login.chinacloudapi.cn/*",
+                "https://login.partner.microsoftonline.cn/*",
+                "https://*.partner.microsoftonline.cn/*"
+            ],
+            "js": ["dist/smart-autofill.js"],
+            "run_at": "document_idle",
+            "all_frames": true
+        }
+    ],
     "sandbox": {
         "pages": [
             "view/argon.html"
@@ -59,6 +76,8 @@
         "contextMenus"
     ],
     "optional_host_permissions": [
+        "http://*/*",
+        "https://*/*",
         "https://www.google.com/",
         "https://*.dropboxapi.com/*",
         "https://www.googleapis.com/*",

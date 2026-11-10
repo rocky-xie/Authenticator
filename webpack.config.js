@@ -9,10 +9,10 @@ module.exports = {
     argon: "./src/argon.ts",
     background: "./src/background.ts",
     content: "./src/content.ts",
+    "smart-autofill": "./src/smart-autofill.ts",
     popup: "./src/popup.ts",
     import: "./src/import.ts",
     options: "./src/options.ts",
-    qrdebug: "./src/qrdebug.ts",
     permissions: "./src/permissions.ts",
   },
   module: {

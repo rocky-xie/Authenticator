@@ -2,34 +2,24 @@
 
 ## Supported version
 
-This fork supports the latest commit on the `dev` branch and release artifacts
-published by [rocky-xie/Authenticator](https://github.com/rocky-xie/Authenticator).
-The current fork version is 8.0.3 and is based on upstream extension version 8.0.2.
-
-Browser-store builds published by the upstream project have a separate release
-and support lifecycle.
+当前支持版本为 `1.0.x`，支持分支为 `dev`。
 
 ## Reporting a vulnerability
 
-Report a potential vulnerability privately through
-[GitHub Security Advisories](https://github.com/rocky-xie/Authenticator/security/advisories/new).
-Do not open a public issue containing an OTP secret, QR code, recovery code,
-backup file, password, OAuth credential, or working exploit.
+请使用 [GitHub Security Advisories](https://github.com/rocky-xie/Authenticator/security/advisories/new) 私下报告安全问题。
 
-Please include affected versions, reproduction steps, impact, and a minimal
-proof of concept where appropriate. This is a volunteer-maintained fork, so no
-fixed response-time guarantee is offered.
+不要在公开 Issue 中提供 OTP 密钥、二维码、恢复码、备份文件、密码、OAuth 凭据、访问令牌或可直接利用的攻击代码。
 
-## Security checks
+报告应包含受影响版本、复现步骤、影响范围，以及必要的最小化验证材料。
 
-Before a release, maintainers should run:
+## Release checks
 
 ```bash
 npm ci
-npm audit --omit=dev
-PUPPETEER_EXEC_PATH=/usr/bin/chromium npm test
+npx tsc --noEmit
+npm test
+npm audit
 npm run prod
 ```
 
-Production packages must not contain test pages, source maps, private OAuth
-credentials, signing keys, or decrypted backup data.
+生产包不得包含测试页面、源码映射、私有 OAuth 凭据、签名密钥或解密后的备份数据。

@@ -1,129 +1,108 @@
-# Authenticator — security-maintained fork
+# Authenticator
 
-<img align="right" width="100" height="100" src="images/icon.svg" alt="Authenticator icon">
+<img align="right" width="96" height="96" src="images/icon.svg" alt="Authenticator icon">
 
 [![CI](https://github.com/rocky-xie/Authenticator/actions/workflows/main.yml/badge.svg?branch=dev)](https://github.com/rocky-xie/Authenticator/actions/workflows/main.yml)
 [![CodeQL](https://github.com/rocky-xie/Authenticator/actions/workflows/codeql-analysis.yml/badge.svg?branch=dev)](https://github.com/rocky-xie/Authenticator/actions/workflows/codeql-analysis.yml)
 
-浏览器内的 TOTP/HOTP 双因素认证器。本仓库是
-[Authenticator-Extension/Authenticator](https://github.com/Authenticator-Extension/Authenticator)
-的安全维护 Fork。当前 Fork 版本为 `8.0.3`，基于上游 `8.0.2`，重点更新了依赖、构建链和输入安全，且保持原有账户数据与 OTP 逻辑兼容。
+本地运行的浏览器双因素认证器，支持 TOTP、HOTP 和可选的智能辅助填充。当前维护基线为 `1.0.0`。
 
-> This is a security-maintained fork of Authenticator. It preserves the original
-> extension behavior while modernizing dependencies and hardening untrusted input.
+## 功能
 
-## 当前状态
+- 标准 TOTP/HOTP：SHA-1、SHA-256、SHA-512、6/8 位验证码及自定义周期。
+- Microsoft 365 软件 OATH MFA：SHA-1、6 位数字、30 秒周期。
+- Microsoft 全球版及世纪互联中国版登录页面智能辅助填充。
+- Steam、Battle.net、十六进制密钥及 GOST 算法兼容。
+- 本地账户存储、密码加密、二维码导入和备份文件导入导出。
+- Chrome、Edge 使用 Manifest V3；同时提供 Firefox 构建。
 
-- Chrome/Edge 使用 Manifest V3；同时保留 Firefox 构建。
-- Vue 3 compatibility mode、Vuex 4、TypeScript 5 和 Webpack 5。
-- 支持标准 TOTP/HOTP、SHA-1/SHA-256/SHA-512、Steam/Battle.net 和 GOST。
-- 兼容 Microsoft 365 软件 OATH MFA：Base32 密钥、SHA-1、6 位数字、30 秒周期。
-- TOTP 使用 Unix 时间计算，与显示时区无关；过期的时钟偏差不会继续生效。
-- 默认在浏览器本地保存账户；可选密码保护使用 Argon2id。
-- 已移除 Vue 2、`argon2-browser`、`node-gost-crypto`、`qrcode-reader`、
-  `vue2-dragula` 等停止维护或不再适合使用的依赖。
-- 生产依赖执行 `npm audit --omit=dev` 时为 0 个已知漏洞。
-- 不再依赖 `otp.ee` 跳转地址，帮助、源码和问题反馈直接指向 GitHub。
+验证码计算以 Unix 时间为准，与显示时区无关。系统时钟不准确会造成验证码错误。
 
-## 安装到 Chrome / Edge
+## 安装
 
-### 从源码构建
-
-环境要求：Node.js 24、npm，以及用于运行扩展测试的 Chrome/Chromium。
+需要 Node.js 24 和 npm：
 
 ```bash
 npm ci
 npm run prod
 ```
 
-构建输出：
+生成目录：
 
-- `release/chrome`：Chrome 可加载目录
-- `release/edge`：Edge 可加载目录
-- `release/firefox`：Firefox 可加载目录
+- `release/chrome`
+- `release/edge`
+- `release/firefox`
 
-Chrome 安装步骤：
+Chrome 安装：打开 `chrome://extensions`，启用“开发者模式”，选择“加载已解压的扩展程序”，然后选择 `release/chrome`。Edge 在 `edge://extensions` 中执行相同步骤。
 
-1. 打开 `chrome://extensions`。
-2. 启用“开发者模式”。
-3. 点击“加载已解压的扩展程序”。
-4. 选择 `release/chrome` 目录。
+压缩包必须先解压；Chrome 不能把普通 ZIP 直接作为商店扩展安装。
 
-Edge 使用 `edge://extensions` 并选择 `release/edge`，操作相同。
+## 智能辅助填充
 
-> Chrome 不能直接把源码 ZIP 当作商店扩展安装。请先解压，再选择包含
-> `manifest.json` 的目录。
+在插件设置中开启“验证码输入框智能辅助填充”。识别到 MFA/OTP 输入框后，输入框右侧会显示 Authenticator 图标：
 
-### 官方商店版本
+1. 点击图标后才会请求当前验证码。
+2. 多个账户可用时先选择账户。
+3. 插件只填入内容，不发送 Enter、不点击按钮、不提交表单。
 
-Chrome、Firefox 和 Edge 商店中的同名扩展由原上游项目发布，不一定包含本
-Fork 的安全升级。需要本 Fork 的行为时，请使用上面的源码构建方式。
+以下 Microsoft 登录域名默认可用，不需要“所有网站”权限：
+
+- `login.microsoftonline.com`
+- `login.live.com`
+- `account.live.com`
+- `mysignins.microsoft.com`
+- `login.chinacloudapi.cn`
+- `login.partner.microsoftonline.cn`
+- `*.partner.microsoftonline.cn`
+
+如需在其他网站使用，可在“设置 → 权限管理”中单独授予可选的网站访问权。关闭智能辅助填充后，原有复制和快捷键填充方式保持不变。
+
+浏览器扩展只能运行在正常的 Chrome/Edge 网页中。Outlook、Teams 使用的 Windows WAM 或内嵌 WebView2 登录窗口不会加载浏览器扩展。
 
 ## Microsoft 365 MFA
 
-本项目支持 Microsoft 365/Entra ID 的标准软件 OATH TOTP。登记时必须完成
-Microsoft 页面上的最终验证码确认步骤；仅扫描二维码并不代表认证器已经登记成功。
+扫描 Microsoft 提供的二维码后，必须返回 Microsoft 登记页面完成最终验证码确认。仅扫描二维码不代表认证器已经登记成功。
 
-建议参数：
-
-| 参数 | 值     |
-| ---- | ------ |
-| 类型 | TOTP   |
+| 参数 | 推荐值 |
+| --- | --- |
+| 类型 | TOTP |
 | 密钥 | Base32 |
-| 算法 | SHA-1  |
-| 位数 | 6      |
-| 周期 | 30 秒  |
+| 算法 | SHA-1 |
+| 位数 | 6 |
+| 周期 | 30 秒 |
 
-若验证码不匹配，请先检查系统时间同步，而不是修改时区。验证码计算使用 Unix 时间，
-中国、日本、欧洲或其他时区在同一时刻应生成相同结果。
+## Backup and restore
 
-## 云备份说明
+本地备份文件的导入、导出和加密不需要云服务。备份文件可能包含 OTP 密钥，应当像密码一样保护。
 
-仓库不包含 Google Drive、Dropbox 或 OneDrive 的私有 OAuth 凭据。默认源码构建会
-显示警告；因为缺少 OAuth 客户端信息，这些云服务不可用。本地 OTP、加密、二维码
-导入和备份文件导入/导出不受影响。
+## Cloud backup
 
-如需启用云备份，请注册自己的 OAuth 应用，并填写
-`src/models/credentials.ts` 和对应 Manifest 配置。不要提交客户端密钥或发布凭据。
+公开源码不包含 Google Drive、Dropbox 或 OneDrive 的私有 OAuth 凭据，因此默认构建中的云备份不可用。本地 OTP、二维码、密码保护和文件备份不受影响。
 
-## 开发
+如需启用云备份，请注册自己的 OAuth 应用并填写 `src/models/credentials.ts` 及对应 Manifest 配置。不要向仓库提交客户端密钥、访问令牌或刷新令牌。
+
+## 开发和验证
 
 ```bash
-# 安装锁定版本的依赖
 npm ci
-
-# 构建单个平台
-npm run chrome
-npm run firefox
-npm run edge
-
-# Chrome 监听构建，输出到 test/chrome
-npm run dev:chrome
-
-# 在真实 Chrome/Chromium 中运行回归测试
-PUPPETEER_EXEC_PATH=/usr/bin/chromium npm test
-
-# 生产依赖安全审计
-npm audit --omit=dev
+npx tsc --noEmit
+npm test
+npm audit
+npm run prod
 ```
 
-测试覆盖 Microsoft 365/RFC 6238 时间边界、OTPAuth URI、HOTP counter、时钟偏差、
-GOST 兼容性、密码页面和主要菜单行为。
-
-更多开发规则见 [CONTRIBUTING.md](CONTRIBUTING.md)，版本变更见
-[CHANGELOG.md](CHANGELOG.md)。
+回归测试覆盖 RFC 4226/6238、Microsoft 365 OATH、时间边界、OTPAuth URI、GOST、加密入口和智能填充域名匹配。
 
 ## 安全与隐私
 
-- 不要在 Issue、日志或截图中公开 OTP 密钥、二维码、恢复码或备份密码。
-- 扫描二维码和生成验证码均在本地完成。
+- OTP 密钥、二维码解析和验证码生成均在本地完成。
+- 智能辅助填充页面脚本不会获得 OTP 密钥。
+- 加密账户未解锁时不会向页面提供验证码。
 - 生产包不包含测试页面或源码映射。
-- 安全问题请按照 [SECURITY.md](SECURITY.md) 私下报告。
+- 不要在 Issue、日志或截图中公开密钥、二维码、恢复码、备份文件或密码。
 
-## 上游与许可
+安全问题请按照 [SECURITY.md](SECURITY.md) 私下报告。
 
-本 Fork 保留原项目的 MIT 许可和贡献者历史。上游项目：
-[Authenticator-Extension/Authenticator](https://github.com/Authenticator-Extension/Authenticator)。
+## License
 
-项目仍感谢卢森堡大学信息安全团队对原项目安全工作的支持，以及所有原项目维护者、
-翻译者和贡献者。
+项目采用 MIT License，并保留原项目及第三方开源组件的版权和许可信息。

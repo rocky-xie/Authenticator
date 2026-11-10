@@ -1,39 +1,31 @@
-// This checks for new stings from _locales/en/messages.json and adds them
-// to other translation files. Used by i18n.sh
 "use strict";
 
 const fs = require("fs");
+const path = require("path");
 
-function readFile(filename) {
-  let data = fs.readFileSync(filename);
-  data = data.toString().replace(/^\uFEFF/, "");
-  return JSON.parse(data);
+function readMessages(filename) {
+  return JSON.parse(fs.readFileSync(filename, "utf8").replace(/^\uFEFF/, ""));
 }
 
-let strings = readFile("_locales/en/messages.json");
-let currentFile;
-let missingKeys = [];
+const localeRoot = path.resolve(__dirname, "..", "_locales");
+const english = readMessages(path.join(localeRoot, "en", "messages.json"));
 
-fs.readdir("_locales", function (err, items) {
-  for (let i = 0; i < items.length; i++) {
-    if (items[i] !== "en") {
-      currentFile = readFile("_locales/" + items[i] + "/messages.json");
-      missingKeys = Object.keys(strings).filter(
-        (string) => !Object.prototype.hasOwnProperty.call(currentFile, string),
-      );
-      if (!missingKeys[0]) {
-        continue;
-      }
-      for (let j = 0; j < missingKeys.length; j++) {
-        currentFile[missingKeys[j]] = strings[missingKeys[j]];
-        fs.writeFile(
-          "_locales/" + items[i] + "/messages.json",
-          JSON.stringify(currentFile, null, 4),
-          (err) => {
-            if (err) throw err;
-          },
-        );
-      }
+for (const locale of fs.readdirSync(localeRoot).sort()) {
+  if (locale === "en") {
+    continue;
+  }
+  const filename = path.join(localeRoot, locale, "messages.json");
+  const messages = readMessages(filename);
+  let changed = false;
+
+  for (const key of Object.keys(english)) {
+    if (!Object.prototype.hasOwnProperty.call(messages, key)) {
+      messages[key] = english[key];
+      changed = true;
     }
   }
-});
+
+  if (changed) {
+    fs.writeFileSync(filename, `${JSON.stringify(messages, null, 2)}\n`);
+  }
+}

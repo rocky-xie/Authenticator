@@ -17,8 +17,9 @@ body {
   height: 480px;
   transform-origin: left top;
   overflow: hidden;
-  font-family: arial, "Microsoft YaHei";
-  font-size: 16px;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-size: 15px;
   cursor: default;
   user-select: none;
 
@@ -53,15 +54,17 @@ svg {
 
 // Header
 .header {
-  height: 38px;
-  line-height: 38px;
+  height: 42px;
+  line-height: 42px;
   position: relative;
   text-align: center;
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 600;
   @include themify($themes) {
     color: themed("black-1");
     background: themed("white-1");
     border-bottom: themed("grey-2") 1px solid;
+    box-shadow: 0 1px 6px rgba(23, 32, 51, 0.06);
   }
 
   .icon {
@@ -193,7 +196,7 @@ svg {
 
 // Codes
 #codes {
-  height: 442px;
+  height: 438px;
   overflow-x: hidden;
   overflow-y: hidden;
   @include themify($themes) {
@@ -297,20 +300,26 @@ svg {
 }
 
 .entry {
-  margin: 10px;
+  margin: 9px 10px;
   margin-right: 0;
-  padding: 10px;
+  padding: 11px 12px;
   @include themify($themes) {
     border: themed("grey-2") 1px solid;
     background: themed("white-1");
   }
-  border-radius: 2px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(23, 32, 51, 0.05);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
   position: relative;
   display: block;
   cursor: pointer;
 
   .issuer {
     font-size: 12px;
+    font-weight: 600;
     @include themify($themes) {
       color: themed("black-1");
     }
@@ -320,7 +329,8 @@ svg {
   }
 
   .code {
-    font-size: 36px;
+    font-size: 34px;
+    letter-spacing: 0.5px;
     @include themify($themes) {
       color: themed("blue-1");
     }
@@ -431,6 +441,8 @@ svg {
   }
 
   &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(23, 32, 51, 0.1);
     .showqr,
     .pin {
       opacity: 1;
@@ -507,7 +519,7 @@ svg {
     color: themed("white-1");
   }
   font-size: 20px;
-  border-radius: 2px;
+  border-radius: 10px;
 
   &.fadein {
     top: 190px;
@@ -530,7 +542,7 @@ svg {
     background: themed("white-1");
     box-shadow: 1px 1px 3px themed("grey-1");
   }
-  border-radius: 2px;
+  border-radius: 10px;
   left: 10px;
   top: 150px;
   z-index: 1000;
@@ -601,7 +613,7 @@ svg {
     color: themed("black-1");
     border: themed("grey-1");
     background: themed("white-1");
-    box-shadow: 1px 1px 3px themed("grey-1");
+    box-shadow: 0 10px 30px rgba(23, 32, 51, 0.18);
   }
   left: 10px;
   top: -1000px;
@@ -636,6 +648,8 @@ svg {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-height: 48px;
+    border-bottom: 1px solid rgba(128, 138, 158, 0.14);
   }
 
   .control-group select {
@@ -697,7 +711,8 @@ svg {
     display: flex;
     margin: 20px;
     margin-right: 0px;
-    font-size: 16px;
+    font-size: 14px;
+    line-height: 1.35;
   }
 
   .checkbox {
@@ -720,6 +735,16 @@ svg {
   .text {
     display: block;
     margin: 10px 0 0 10px;
+  }
+
+  .preference-help {
+    margin: 0 20px 10px;
+    padding: 0 0 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    @include themify($themes) {
+      color: themed("grey-1");
+    }
   }
 
   .warning {

@@ -50,12 +50,6 @@
           <span><IconComments /></span>{{ i18n.feedback }}
         </p>
         <p
-          v-bind:title="i18n.translate"
-          v-on:click="openLink('https://crowdin.com/project/authenticator')"
-        >
-          <span><IconGlobe /></span>{{ i18n.translate }}
-        </p>
-        <p
           v-bind:title="i18n.source"
           v-on:click="openLink('https://github.com/rocky-xie/Authenticator')"
         >
@@ -78,13 +72,11 @@ import { syncTimeWithGoogle } from "../../syncTime";
 import IconArrowLeft from "../../../svg/arrow-left.svg";
 import IconInfo from "../../../svg/info.svg";
 import IconExchange from "../../../svg/exchange.svg";
-import IconDatabase from "../../../svg/database.svg";
 import IconLock from "../../../svg/lock.svg";
 import IconSync from "../../../svg/sync.svg";
 import IconWrench from "../../../svg/wrench.svg";
 import IconAdvisor from "../../../svg/lightbulb.svg";
 import IconComments from "../../../svg/comments.svg";
-import IconGlobe from "../../../svg/globe.svg";
 import IconCode from "../../../svg/code.svg";
 import IconClipboardCheck from "../../../svg/clipboard-check.svg";
 import { isSafari } from "../../browser";
@@ -95,13 +87,11 @@ export default defineComponent({
     IconArrowLeft,
     IconInfo,
     IconExchange,
-    IconDatabase,
     IconLock,
     IconSync,
     IconWrench,
     IconAdvisor,
     IconComments,
-    IconGlobe,
     IconCode,
     IconClipboardCheck,
   },

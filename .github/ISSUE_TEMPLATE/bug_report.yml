@@ -7,8 +7,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Do not use this form to ask about lost codes or accounts!
-        Read more [here](https://authenticator.cc/docs/en/lost-codes).
+        Never include OTP secrets, QR codes, recovery codes, passwords, or backup files.
+        Lost authenticator secrets cannot be recovered unless you have a backup.
   - type: textarea
     attributes:
       label: Describe the issue

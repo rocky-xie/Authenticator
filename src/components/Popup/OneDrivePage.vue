@@ -29,11 +29,9 @@
       <div class="text" v-show="!backupToken">
         <a
           v-on:click="
-            openLink(
-              'https://github.com/Authenticator-Extension/Authenticator/wiki',
-            )
+            openLink('https://github.com/rocky-xie/Authenticator#cloud-backup')
           "
-          href="https://github.com/Authenticator-Extension/Authenticator/wiki"
+          href="https://github.com/rocky-xie/Authenticator#cloud-backup"
           >{{ i18n.onedrive_business_perms }}</a
         >
       </div>

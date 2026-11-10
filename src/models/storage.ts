@@ -146,8 +146,8 @@ export class BrowserStorage {
     return;
   }
 
-  // Use for Chrome only.
-  // https://github.com/Authenticator-Extension/Authenticator/issues/412
+  // Rewriting the current data clears Chromium's accumulated sync tombstones
+  // without changing the stored values.
   static async clearLogs() {
     const storageLocation = await this.getStorageLocation();
     if (storageLocation === "local") {
