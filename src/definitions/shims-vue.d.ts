@@ -1,11 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module "*.vue" {
-  import Vue from "vue";
-  export default Vue;
+  import type { DefineComponent } from "vue";
+  const component: DefineComponent<{}, {}, any>;
+  export default component;
 }
 
 declare module "*.svg" {
-  import { ComponentOptions } from "vue";
-  const a: ComponentOptions<any>;
-  export default a;
+  import type { DefineComponent } from "vue";
+  const component: DefineComponent<{}, {}, any>;
+  export default component;
 }

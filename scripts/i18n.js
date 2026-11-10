@@ -18,7 +18,9 @@ fs.readdir('_locales', function(err, items) {
     for (let i=0; i<items.length; i++) {
       if (items[i] !== 'en') {
         currentFile = readFile('_locales/' + items[i] + '/messages.json');
-        missingKeys = Object.keys(strings).filter(string => !currentFile.hasOwnProperty(string));
+        missingKeys = Object.keys(strings).filter(
+          (string) => !Object.prototype.hasOwnProperty.call(currentFile, string)
+        );
         if (!missingKeys[0]) {
           continue;
         }

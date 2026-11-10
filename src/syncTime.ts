@@ -13,6 +13,7 @@ export async function syncTimeWithGoogle() {
           xhr.abort();
           return resolve("updateFailure");
         }, 5000);
+        const requestStartedAt = Date.now();
         xhr.onreadystatechange = () => {
           if (xhr.readyState === 4) {
             clearTimeout(xhrAbort);
@@ -21,14 +22,15 @@ export async function syncTimeWithGoogle() {
               return resolve("updateFailure");
             }
             const serverTime = new Date(date).getTime();
-            const clientTime = new Date().getTime();
+            // Estimate the local time at the response midpoint so network
+            // latency does not become part of the saved correction.
+            const clientTime = (requestStartedAt + Date.now()) / 2;
             const offset = Math.round((serverTime - clientTime) / 1000);
 
             if (Math.abs(offset) <= 300) {
               // within 5 minutes
-              UserSettings.items.offset = Math.round(
-                (serverTime - clientTime) / 1000
-              );
+              UserSettings.items.offset = offset;
+              UserSettings.items.offsetUpdatedAt = Date.now();
               UserSettings.commitItems();
               return resolve("updateSuccess");
             } else {
@@ -40,6 +42,6 @@ export async function syncTimeWithGoogle() {
       } catch (error) {
         return reject(error as Error);
       }
-    }
+    },
   );
 }

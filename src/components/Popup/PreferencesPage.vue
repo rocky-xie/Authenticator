@@ -61,11 +61,11 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { isFirefox, isSafari } from "../../browser";
 import { UserSettings } from "../../models/settings";
 
-export default Vue.extend({
+export default defineComponent({
   computed: {
     zoom: {
       get(): number {
@@ -91,7 +91,7 @@ export default Vue.extend({
         this.$store.commit("menu/setSmartFilter", smartFilter);
         this.$store.commit(
           "notification/alert",
-          this.i18n.activate_auto_filter
+          this.i18n.activate_auto_filter,
         );
       },
     },
@@ -176,7 +176,7 @@ export default Vue.extend({
     },
     migrateStorage() {
       this.$store.commit("currentView/changeView", "LoadingPage");
-      this.$store
+      (this.$store
         .dispatch("accounts/migrateStorage", this.newStorageLocation)
         .then((m) => {
           this.$store.commit("notification/alert", this.i18n[m]);
@@ -185,7 +185,7 @@ export default Vue.extend({
         (r: string) => {
           this.$store.commit("notification/alert", this.i18n.updateFailure + r);
           this.$store.commit("currentView/changeView", "PreferencesPage");
-        };
+        });
     },
     requireContextMenuPermission() {
       chrome.permissions.request(
@@ -200,7 +200,7 @@ export default Vue.extend({
           chrome.runtime.sendMessage({
             action: "updateContextMenu",
           });
-        }
+        },
       );
     },
   },

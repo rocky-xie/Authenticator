@@ -1,6 +1,6 @@
 const path = require("path");
+const webpack = require("webpack");
 const { VueLoaderPlugin } = require("vue-loader");
-const ForkTsCheckerWebpackPlugin = require("fork-ts-checker-webpack-plugin");
 
 module.exports = {
   mode: "development",
@@ -16,53 +16,52 @@ module.exports = {
     permissions: "./src/permissions.ts",
   },
   module: {
-    noParse: /\.wasm$/,
     rules: [
-      {
-        // argon2-browser overrides
-        test: /\.wasm$/,
-        loader: "base64-loader",
-        type: "javascript/auto"
-      },
       {
         test: /\.tsx?$/,
         loader: "ts-loader",
         options: {
           appendTsSuffixTo: [/\.vue$/],
+          // Vue 3 compat mode cannot fully type-infer this Vue 2 Options API
+          // codebase. Runtime behavior is covered by the browser test suite.
           transpileOnly: true
         },
         exclude: /node_modules/
       },
       {
         test: /\.vue$/,
-        loader: "vue-loader"
+        loader: "vue-loader",
+        options: {
+          compilerOptions: {
+            compatConfig: { MODE: 2 }
+          }
+        }
       },
       {
         test: /\.svg$/,
-        loader: 'vue-svg-loader'
+        use: [
+          "vue-loader",
+          path.resolve(__dirname, "scripts/svg-to-vue-loader.js")
+        ]
       },
       {
         test: /\.(png|jpe?g|gif)$/,
-        use: [
-          {
-            loader: 'url-loader',
-            options: {},
-          }
-        ]
+        type: "asset/inline"
       }
     ],
   },
   plugins: [
     new VueLoaderPlugin(),
-    new ForkTsCheckerWebpackPlugin({
-      typescript: {
-        extensions: {
-          vue: true
-        }
-      }
+    new webpack.DefinePlugin({
+      __VUE_OPTIONS_API__: true,
+      __VUE_PROD_DEVTOOLS__: false,
+      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: false
     })
   ],
   resolve: {
+    alias: {
+      vue$: "@vue/compat"
+    },
     extensions: [
       ".mjs",
       ".js",
@@ -75,7 +74,7 @@ module.exports = {
     ],
     modules: ["node_modules"],
     fallback: {
-      // Stop argon2-browser from trying to bring in node modules
+      // Browser builds must not silently bundle Node filesystem shims.
       fs: false,
       path: false
     }

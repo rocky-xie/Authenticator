@@ -13,15 +13,13 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
-// @ts-ignore
-import QRCode from "qrcode-reader";
+import { defineComponent } from "vue";
 import jsQR from "jsqr";
 import { getEntryDataFromOTPAuthPerLine } from "../../import";
 import { EntryStorage } from "../../models/storage";
 import { Encryption } from "../../models/encryption";
 
-export default Vue.extend({
+export default defineComponent({
   methods: {
     async importQr(event: Event, closeWindow: Boolean) {
       const target = event.target as HTMLInputElement;
@@ -42,7 +40,7 @@ export default Vue.extend({
         }
 
         const result = await getEntryDataFromOTPAuthPerLine(
-          otpUrlList.join("\n")
+          otpUrlList.join("\n"),
         );
 
         let importData: {
@@ -58,7 +56,7 @@ export default Vue.extend({
         if (Object.keys(decryptedFileData).length) {
           await EntryStorage.import(
             this.$encryption as Encryption,
-            decryptedFileData
+            decryptedFileData,
           );
 
           if (hasFailedResults) {
@@ -97,70 +95,32 @@ async function getOtpUrlFromQrFile(file: File): Promise<string | null> {
     const reader = new FileReader();
     reader.onload = () => {
       const imageUrl = reader.result as string;
-      const qrReader = new QRCode();
-      qrReader.callback = (
-        error: string,
-        text: {
-          result: string;
-          points: Array<{
-            x: number;
-            y: number;
-            count: number;
-            estimatedModuleSize: number;
-          }>;
+      const image = document.createElement("img");
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx || image.width <= 0 || image.height <= 0) {
+          return resolve(null);
         }
-      ) => {
-        if (error) {
-          console.error(error);
 
-          const image: HTMLImageElement = document.createElement("img");
-          image.onload = () => {
-            const canvas: HTMLCanvasElement = document.createElement("canvas");
-            const ctx: CanvasRenderingContext2D = canvas.getContext(
-              "2d"
-            ) as CanvasRenderingContext2D;
-
-            canvas.width = image.width;
-            canvas.height = image.height;
-            ctx.drawImage(image, 0, 0);
-
-            const qrImageData = ctx.getImageData(
-              0,
-              0,
-              canvas.width,
-              canvas.height
-            );
-            const jsQrCode = jsQR(
-              qrImageData.data,
-              canvas.width,
-              canvas.height
-            );
-
-            if (jsQrCode && jsQrCode.data) {
-              if (
-                jsQrCode.data.indexOf("otpauth://") !== 0 &&
-                jsQrCode.data.indexOf("otpauth-migration://") !== 0
-              ) {
-                return resolve(null);
-              }
-              return resolve(jsQrCode.data);
-            } else {
-              return resolve(null);
-            }
-          };
-          image.src = imageUrl;
-        } else {
-          if (
-            text.result.indexOf("otpauth://") !== 0 &&
-            text.result.indexOf("otpauth-migration://") !== 0
-          ) {
-            return resolve(null);
-          }
-          return resolve(text.result);
+        canvas.width = image.width;
+        canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const result = jsQR(imageData.data, canvas.width, canvas.height)?.data;
+        if (
+          !result ||
+          (!result.startsWith("otpauth://") &&
+            !result.startsWith("otpauth-migration://"))
+        ) {
+          return resolve(null);
         }
+        return resolve(result);
       };
-      qrReader.decode(imageUrl);
+      image.onerror = () => resolve(null);
+      image.src = imageUrl;
     };
+    reader.onerror = () => resolve(null);
     reader.readAsDataURL(file);
   });
 }

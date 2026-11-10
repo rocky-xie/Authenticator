@@ -3,7 +3,6 @@
 import puppeteer from "puppeteer";
 import path from "path";
 import fs from "fs";
-import { execSync } from "child_process";
 import merge from "lodash/merge";
 
 interface MochaTestResults {
@@ -36,6 +35,16 @@ const colors = {
 }
 
 async function runTests() {
+  const systemBrowserPaths = [
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+  ];
+  const executablePath =
+    process.env.PUPPETEER_EXEC_PATH ||
+    systemBrowserPaths.find(candidate => fs.existsSync(candidate));
+
   const puppeteerArgs: string[] = [
     `--load-extension=${path.resolve(__dirname, "../test/chrome")}`,
     // for CI
@@ -48,43 +57,33 @@ async function runTests() {
     args: puppeteerArgs,
     // chrome extensions don't work in headless
     headless: false,
-    executablePath: process.env.PUPPETEER_EXEC_PATH,
+    executablePath,
   });
   const mochaPage = await browser.newPage();
-  await mochaPage.goto(
-    "chrome-extension://bhghoamapcdpbohphigoooaddinpkbai/view/test.html"
-  );
 
   // by setting this env var, console logging works for both components and testing
   if (process.env.ENABLE_CONSOLE) {
     mochaPage.on("console", consoleMessage => console.log(consoleMessage.text()));
   }
+  mochaPage.on("pageerror", error => console.error(error));
 
-  const results: {
-    testResults: MochaTestResults;
-  } = await mochaPage.evaluate(() => {
-    return new Promise((resolve: (value: {
-    testResults: MochaTestResults;
-  }) => void) => {
-      window.addEventListener("testsComplete", () => {
-        resolve({
-          testResults: window.__mocha_test_results__,
-        });
-      });
+  await mochaPage.goto(
+    "chrome-extension://bhghoamapcdpbohphigoooaddinpkbai/view/test.html"
+  );
 
-      if (window.__mocha_test_results__.completed) {
-        resolve({
-          testResults: window.__mocha_test_results__,
-        });
-      }
-    });
-  });
+  await mochaPage.waitForFunction(
+    () => window.__mocha_test_results__?.completed === true,
+    { timeout: 30000 }
+  );
+  const results: { testResults: MochaTestResults } = await mochaPage.evaluate(
+    () => ({ testResults: window.__mocha_test_results__ })
+  );
 
   let failedTest = false;
   let display: TestDisplay = {};
   if (results?.testResults.tests) {
     for (const test of results.testResults.tests) {
-      let tmp: TestDisplay = {};
+      const tmp: TestDisplay = {};
       test.path.reduce((acc, current, index) => {
         return acc[current] = test.path.length - 1 === index ? test : {}
       }, tmp);

@@ -1,24 +1,65 @@
-import argon2 from "argon2-browser";
+import { argon2id, argon2Verify } from "hash-wasm";
 
 window.addEventListener("message", (event) => {
+  if (event.source !== window.parent) {
+    return;
+  }
+
   const message = event.data;
   const source = event.source as Window;
 
-  if (!source) {
+  if (
+    !source ||
+    !message ||
+    typeof message !== "object" ||
+    typeof message.requestId !== "string" ||
+    typeof message.value !== "string" ||
+    message.value.length > 1024 * 1024
+  ) {
     return;
   }
 
   switch (message.action) {
     case "hash":
-      Argon.hash(message.value, message.salt).then((hash) => {
-        source.postMessage({ response: hash }, event.origin);
-      });
+      if (
+        (typeof message.salt !== "string" &&
+          !(message.salt instanceof Uint8Array)) ||
+        message.salt.length > 1024
+      ) {
+        return;
+      }
+      Argon.hash(message.value, message.salt)
+        .then((hash) => {
+          source.postMessage(
+            { requestId: message.requestId, response: hash },
+            "*",
+          );
+        })
+        .catch(() => {
+          source.postMessage(
+            { requestId: message.requestId, error: "argon_hash_failed" },
+            "*",
+          );
+        });
       break;
 
     case "verify":
-      Argon.compareHash(message.hash, message.value).then((result) => {
-        source.postMessage({ response: result }, event.origin);
-      });
+      if (typeof message.hash !== "string" || message.hash.length > 4096) {
+        return;
+      }
+      Argon.compareHash(message.hash, message.value)
+        .then((result) => {
+          source.postMessage(
+            { requestId: message.requestId, response: result },
+            "*",
+          );
+        })
+        .catch(() => {
+          source.postMessage(
+            { requestId: message.requestId, error: "argon_verify_failed" },
+            "*",
+          );
+        });
       break;
 
     default:
@@ -29,31 +70,22 @@ window.addEventListener("message", (event) => {
 
 class Argon {
   static async hash(value: string, salt: string | Uint8Array) {
-    const hash = await argon2.hash({
-      pass: value,
-      salt: salt,
-      time: 2,
-      mem: 1024 * 19,
+    return argon2id({
+      password: value,
+      salt,
+      iterations: 2,
+      memorySize: 1024 * 19,
       parallelism: 1,
-      hashLen: 32,
-      type: argon2.ArgonType.Argon2id,
+      hashLength: 32,
+      outputType: "encoded",
     });
-
-    return hash.encoded;
   }
 
-  static compareHash(hash: string, value: string) {
-    return new Promise((resolve: (value: boolean) => void) => {
-      argon2
-        .verify({
-          pass: value,
-          encoded: hash,
-        })
-        .then(() => resolve(true))
-        .catch((e: { message: string; code: number }) => {
-          console.error("Error decoding hash", e);
-          resolve(false);
-        });
-    });
+  static async compareHash(hash: string, value: string) {
+    try {
+      return await argon2Verify({ password: value, hash });
+    } catch {
+      return false;
+    }
   }
 }

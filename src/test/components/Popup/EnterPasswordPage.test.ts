@@ -1,30 +1,26 @@
 import "mocha";
-import * as chai from "chai";
 import * as sinon from "sinon";
-import * as sinonChai from "sinon-chai";
+import { expect } from "chai";
 
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import Vuex, { Store } from "vuex";
 import CommonComponents from "../../../components/common/index";
 
 import EnterPasswordPage from "../../../components/Popup/EnterPasswordPage.vue";
 import { loadI18nMessages } from "../../../store/i18n";
 
-const should = chai.should();
-chai.use(sinonChai);
 mocha.setup("bdd");
-const localVue = createLocalVue();
+let i18n: { [key: string]: string };
+const commonComponents = Object.fromEntries(
+  CommonComponents.map((component) => [component.name, component.component]),
+);
 
 describe("EnterPasswordPage", () => {
   before(async () => {
-    localVue.prototype.i18n = await loadI18nMessages();
-    localVue.use(Vuex);
-    for (const component of CommonComponents) {
-      localVue.component(component.name, component.component);
-    }
+    i18n = await loadI18nMessages();
   });
 
-  let storeOpts = {
+  const storeOpts = {
     modules: {
       accounts: {
         actions: {
@@ -45,51 +41,61 @@ describe("EnterPasswordPage", () => {
     store = new Vuex.Store(storeOpts);
   });
 
+  const mountPage = (attachTo?: Element) =>
+    mount(EnterPasswordPage, {
+      attachTo,
+      global: {
+        plugins: [store],
+        mocks: { i18n },
+        components: commonComponents,
+      },
+    });
+
   it("should apply password when button is clicked", async () => {
-    const wrapper = mount(EnterPasswordPage, { store, localVue });
+    const wrapper = mountPage();
 
     const passwordInput = wrapper.find("input");
     const passwordButton = wrapper.find("button");
 
     passwordInput.setValue("somePassword");
     await passwordButton.trigger("click");
-    storeOpts.modules.accounts.actions.applyPassphrase.should.have.been.calledWith(
-      sinon.match.any,
-      "somePassword"
-    );
+    expect(
+      storeOpts.modules.accounts.actions.applyPassphrase.calledWith(
+        sinon.match.any,
+        "somePassword",
+      ),
+    ).to.equal(true);
   });
 
   it("should apply password when enter is pressed", async () => {
-    const wrapper = mount(EnterPasswordPage, { store, localVue });
+    const wrapper = mountPage();
 
     const passwordInput = wrapper.find("input");
 
     passwordInput.setValue("anotherPassword");
     await passwordInput.trigger("keyup.enter");
-    storeOpts.modules.accounts.actions.applyPassphrase.should.have.been.calledWith(
-      sinon.match.any,
-      "anotherPassword"
-    );
+    expect(
+      storeOpts.modules.accounts.actions.applyPassphrase.calledWith(
+        sinon.match.any,
+        "anotherPassword",
+      ),
+    ).to.equal(true);
   });
 
   it("should autofocus password input", () => {
-    const wrapper = mount(EnterPasswordPage, {
-      store,
-      localVue,
-      attachToDocument: true,
-    });
+    const wrapper = mountPage(document.body);
 
     const passwordInput = wrapper.find("input");
 
-    passwordInput.element.should.eq(document.activeElement);
+    expect(passwordInput.element).to.equal(document.activeElement);
   });
 
   it("should not show incorrect password message", () => {
-    const wrapper = mount(EnterPasswordPage, { store, localVue });
+    const wrapper = mountPage();
 
     const errorText = wrapper.find("label.warning");
 
-    errorText.isVisible().should.be.false;
+    expect(errorText.exists()).to.equal(false);
   });
 
   context("Incorrect password was entered", () => {
@@ -98,11 +104,11 @@ describe("EnterPasswordPage", () => {
     });
 
     it("should show incorrect password message", () => {
-      const wrapper = mount(EnterPasswordPage, { store, localVue });
+      const wrapper = mountPage();
 
       const errorText = wrapper.find("label.warning");
 
-      errorText.isVisible().should.be.true;
+      expect(errorText.exists()).to.equal(true);
     });
   });
 });

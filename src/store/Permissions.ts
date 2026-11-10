@@ -110,7 +110,7 @@ const permissions: Permission[] = [
           return {
             valid: false,
             message: chrome.i18n.getMessage(
-              "permission_onedrive_cannot_revoke"
+              "permission_onedrive_cannot_revoke",
             ),
           };
         }
@@ -131,7 +131,7 @@ const permissions: Permission[] = [
           return {
             valid: false,
             message: chrome.i18n.getMessage(
-              "permission_onedrive_cannot_revoke"
+              "permission_onedrive_cannot_revoke",
             ),
           };
         }
@@ -152,21 +152,21 @@ export class Permissions implements Module {
       mutations: {
         revokePermission: async (
           state: PermissionsState,
-          permissionId: string
+          permissionId: string,
         ) => {
           const permissionObject = this.getPermissionById(permissionId);
           const validators = permissionObject.validation ?? [];
           const validationResults = (
             await Promise.all(
-              validators.map(async (validator) => await validator())
+              validators.map(async (validator) => await validator()),
             )
           ).filter((result) => !result.valid);
 
           if (validationResults.length > 0) {
             const messages = await Promise.all(
               validationResults.map(
-                async (result) => "• " + (await result).message
-              )
+                async (result) => "• " + (await result).message,
+              ),
             );
             alert(messages.join("\n"));
             return;
@@ -203,7 +203,7 @@ export class Permissions implements Module {
           });
 
           return resolve(permissionList);
-        }
+        },
       );
     });
   }
@@ -234,7 +234,7 @@ export class Permissions implements Module {
                 },
                 () => {
                   resolve();
-                }
+                },
               );
             }
           }
@@ -247,11 +247,11 @@ export class Permissions implements Module {
                 },
                 () => {
                   resolve();
-                }
+                },
               );
             }
           }
-        }
+        },
       );
 
       // Timeout for remove permissions failed

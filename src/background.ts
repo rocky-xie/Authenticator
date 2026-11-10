@@ -1,4 +1,11 @@
 import { getCredentials } from "./models/credentials";
+
+async function getCachedSecrets() {
+  return (await chrome.storage.session.get([
+    "cachedPassphrase",
+    "cachedKeyId",
+  ])) as { cachedPassphrase?: string | null; cachedKeyId?: string | null };
+}
 import { Encryption } from "./models/encryption";
 import { EntryStorage, ManagedStorage } from "./models/storage";
 import { Dropbox, Drive, OneDrive } from "./models/backup";
@@ -13,6 +20,7 @@ import { CodeState } from "./models/otp";
 import { getOTPAuthPerLineFromOPTAuthMigration } from "./models/migration";
 import { isChrome, isFirefox } from "./browser";
 import { UserSettings } from "./models/settings";
+import { parseOTPAuthURI } from "./models/otpauth-uri";
 
 let contentTab: chrome.tabs.Tab | undefined;
 
@@ -118,91 +126,22 @@ async function getTotp(text: string, silent = false) {
       return true;
     }
   } else {
-    let uri = text.split("otpauth://")[1];
-    let type = uri.substr(0, 4).toLowerCase();
-    uri = uri.substr(5);
-    let label = uri.split("?")[0];
-    const parameterPart = uri.split("?")[1];
-    if (!label || !parameterPart) {
+    const parsed = parseOTPAuthURI(text);
+    if (!parsed) {
       !silent && chrome.tabs.sendMessage(id, { action: "errorqr" });
       return false;
     } else {
-      let secret = "";
-      let account: string | undefined;
-      let issuer: string | undefined;
-      let algorithm: string | undefined;
-      let period: number | undefined;
-      let digits: number | undefined;
-
-      try {
-        label = decodeURIComponent(label);
-      } catch (error) {
-        console.error(error);
-      }
-      if (label.indexOf(":") !== -1) {
-        issuer = label.split(":")[0];
-        account = label.split(":")[1];
-      } else {
-        account = label;
-      }
-      const parameters = parameterPart.split("&");
-      const {
-        cachedPassphrase,
-        cachedKeyId,
-      } = await chrome.storage.session.get();
-      parameters.forEach((item) => {
-        const parameter = item.split("=");
-        if (parameter[0].toLowerCase() === "secret") {
-          secret = parameter[1];
-        } else if (parameter[0].toLowerCase() === "issuer") {
-          try {
-            issuer = decodeURIComponent(parameter[1]);
-          } catch {
-            issuer = parameter[1];
-          }
-          issuer = issuer.replace(/\+/g, " ");
-        } else if (parameter[0].toLowerCase() === "counter") {
-          // let counter = Number(parameter[1]);
-          // counter = isNaN(counter) || counter < 0 ? 0 : counter;
-        } else if (parameter[0].toLowerCase() === "period") {
-          period = Number(parameter[1]);
-          period =
-            isNaN(period) || period < 0 || period > 60 || 60 % period !== 0
-              ? undefined
-              : period;
-        } else if (parameter[0].toLowerCase() === "digits") {
-          digits = Number(parameter[1]);
-          digits = isNaN(digits) || digits === 0 ? 6 : digits;
-        } else if (parameter[0].toLowerCase() === "algorithm") {
-          algorithm = parameter[1];
-        }
-      });
-
-      if (!secret) {
-        !silent && chrome.tabs.sendMessage(id, { action: "errorqr" });
-        return false;
-      } else if (
-        !/^[0-9a-f]+$/i.test(secret) &&
-        !/^[2-7a-z]+=*$/i.test(secret)
-      ) {
-        !silent && chrome.tabs.sendMessage(id, { action: "secretqr", secret });
-        return false;
-      } else {
-        const encryption = new Encryption(cachedPassphrase, cachedKeyId);
+      const { account, algorithm, counter, digits, issuer, period, secret } =
+        parsed;
+      const type = parsed.type;
+      const { cachedPassphrase = "", cachedKeyId = "" } =
+        await getCachedSecrets();
+      {
+        const encryption = new Encryption(
+          cachedPassphrase || "",
+          cachedKeyId || "",
+        );
         const hash = crypto.randomUUID();
-        if (
-          !/^[2-7a-z]+=*$/i.test(secret) &&
-          /^[0-9a-f]+$/i.test(secret) &&
-          type === "totp"
-        ) {
-          type = "hex";
-        } else if (
-          !/^[2-7a-z]+=*$/i.test(secret) &&
-          /^[0-9a-f]+$/i.test(secret) &&
-          type === "hotp"
-        ) {
-          type = "hhex";
-        }
         const entryData: { [hash: string]: RawOTPStorage } = {};
         entryData[hash] = {
           account,
@@ -212,7 +151,7 @@ async function getTotp(text: string, silent = false) {
           type,
           encrypted: false,
           index: 0,
-          counter: 0,
+          counter,
           pinned: false,
         };
         if (period) {
@@ -255,7 +194,7 @@ function getBackupToken(service: string) {
         UserSettings.commitItems();
         chrome.runtime.sendMessage({ action: "drivetoken", value });
         return true;
-      }
+      },
     );
   } else {
     let authUrl = "";
@@ -345,7 +284,7 @@ function getBackupToken(service: string) {
                       Accept: "application/json",
                       "Content-Type": "application/x-www-form-urlencoded",
                     },
-                  }
+                  },
                 );
 
                 try {
@@ -379,7 +318,7 @@ function getBackupToken(service: string) {
                       Accept: "application/json",
                       "Content-Type": "application/x-www-form-urlencoded",
                     },
-                  }
+                  },
                 );
 
                 try {
@@ -405,14 +344,14 @@ function getBackupToken(service: string) {
         }
 
         return;
-      }
+      },
     );
   }
 }
 
 async function uploadBackup(service: string) {
-  const { cachedPassphrase, cachedKeyId } = await chrome.storage.session.get();
-  const encryption = new Encryption(cachedPassphrase, cachedKeyId);
+  const { cachedPassphrase = "", cachedKeyId = "" } = await getCachedSecrets();
+  const encryption = new Encryption(cachedPassphrase || "", cachedKeyId || "");
 
   switch (service) {
     case "dropbox":
@@ -432,30 +371,8 @@ async function uploadBackup(service: string) {
   }
 }
 
-// Show issue page after first install
-chrome.runtime.onInstalled.addListener(async (details) => {
-  if (details.reason !== "install") {
-    return;
-  } else if (await ManagedStorage.get("disableInstallHelp", false)) {
-    return;
-  }
-
-  let url: string | null = null;
-
-  if (isChrome) {
-    url = "https://otp.ee/chromeissues";
-  }
-
-  if (url) {
-    chrome.tabs.create({ url, active: true });
-  }
-
-  // https://stackoverflow.com/a/56483156
-  return true;
-});
-
 chrome.commands.onCommand.addListener(async (command: string) => {
-  const { cachedPassphrase, cachedKeyId } = await chrome.storage.session.get();
+  const { cachedPassphrase, cachedKeyId } = await getCachedSecrets();
 
   let tab: chrome.tabs.Tab | undefined;
 
@@ -501,7 +418,10 @@ chrome.commands.onCommand.addListener(async (command: string) => {
 
         if (matchedEntries && matchedEntries.length === 1) {
           const entry = matchedEntries[0];
-          const encryption = new Encryption(cachedPassphrase, cachedKeyId);
+          const encryption = new Encryption(
+            cachedPassphrase || "",
+            cachedKeyId || "",
+          );
           entry.applyEncryption(encryption);
 
           if (
@@ -527,7 +447,7 @@ chrome.commands.onCommand.addListener(async (command: string) => {
 
 async function setAutolock() {
   const enforcedAutolock = Number(
-    await ManagedStorage.get("enforceAutolock", false)
+    await ManagedStorage.get("enforceAutolock", false),
   );
 
   if (enforcedAutolock && enforcedAutolock > 0) {
@@ -578,7 +498,7 @@ async function updateContextMenu() {
             }
             chrome.windows.create({
               url: chrome.runtime.getURL(popupUrl),
-              type: windowType as chrome.windows.createTypeEnum,
+              type: windowType as chrome.windows.CreateType,
               height: 400,
               width: 320,
             });
@@ -590,7 +510,7 @@ async function updateContextMenu() {
           chrome.contextMenus.removeAll();
         }
       }
-    }
+    },
   );
 }
 

@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/ban-types */
 interface Module {
   getModule(): Promise<VuexConstructor> | VuexConstructor;
 }
 
 interface VuexConstructor {
   state?: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   };
   mutations?: {
@@ -22,7 +20,6 @@ interface VuexConstructor {
   getters?: {
     [key: string]: Function;
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   modules?: Record<string, any>;
   plugins?: Array<Function>;
   strict?: boolean;

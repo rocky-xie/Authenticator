@@ -28,10 +28,10 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { verifyPasswordUsingKeyID } from "../../models/password";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       phrase: "",
@@ -53,7 +53,7 @@ export default Vue.extend({
       } catch {
         console.warn(
           "Invalid password policy. The password policy is not a valid regular expression.",
-          this.$store.state.menu.passwordPolicy
+          this.$store.state.menu.passwordPolicy,
         );
         return null;
       }
@@ -72,7 +72,7 @@ export default Vue.extend({
       if (this.defaultEncryption) {
         const isCorrectPassword = await verifyPasswordUsingKeyID(
           this.defaultEncryption,
-          this.currentPhrase
+          this.currentPhrase,
         );
         if (!isCorrectPassword) {
           this.$store.commit("notification/alert", this.i18n.phrase_not_match);
@@ -108,7 +108,7 @@ export default Vue.extend({
       if (this.defaultEncryption) {
         const isCorrectPassword = await verifyPasswordUsingKeyID(
           this.defaultEncryption,
-          this.currentPhrase
+          this.currentPhrase,
         );
         if (!isCorrectPassword) {
           this.$store.commit("notification/alert", this.i18n.phrase_wrong);

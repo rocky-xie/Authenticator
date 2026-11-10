@@ -27,9 +27,11 @@
       <div>
         <p id="import_info">
           {{ i18n.otp_backup_inform }}
-          <a href="https://otp.ee/otpbackup" target="_blank">{{
-            i18n.otp_backup_learn
-          }}</a>
+          <a
+            href="https://github.com/Authenticator-Extension/Authenticator/wiki"
+            target="_blank"
+            >{{ i18n.otp_backup_learn }}</a
+          >
         </p>
       </div>
       <component v-bind:is="importType" />
@@ -40,12 +42,12 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import FileImport from "./Import/FileImport.vue";
 import QrImport from "./Import/QrImport.vue";
 import TextImport from "./Import/TextImport.vue";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     const query = location.search ? location.search.substr(1) : "";
     const importType = ["FileImport", "QrImport", "TextImport"].includes(query)

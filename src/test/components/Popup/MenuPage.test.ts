@@ -1,8 +1,6 @@
 import "mocha";
-import * as chai from "chai";
 import { assert } from "chai";
-import * as sinonChai from "sinon-chai";
-import { createLocalVue, mount, Wrapper } from "@vue/test-utils";
+import { mount, VueWrapper } from "@vue/test-utils";
 import Vuex, { Store } from "vuex";
 
 import { loadI18nMessages } from "../../../store/i18n";
@@ -18,18 +16,15 @@ import { Qr } from "../../../store/Qr";
 
 import chrome from "sinon-chrome";
 
-chai.should();
-chai.use(sinonChai);
 mocha.setup("bdd");
-const localVue = createLocalVue();
+let i18n: { [key: string]: string };
 
 describe("MenuPage", () => {
   before(async () => {
-    localVue.prototype.i18n = await loadI18nMessages();
-    localVue.use(Vuex);
+    i18n = await loadI18nMessages();
   });
 
-  let storeOpts = {
+  const storeOpts = {
     menu: {
       state: {
         version: "1.2.3",
@@ -40,7 +35,7 @@ describe("MenuPage", () => {
 
   let store: Store<{}>;
 
-  let wrapper: Wrapper<any>;
+  let wrapper: VueWrapper<any>;
 
   before(() => {
     // mock the chrome global object
@@ -53,14 +48,13 @@ describe("MenuPage", () => {
       modules: storeOpts,
     });
     wrapper = mount(MenuPage, {
-      store,
-      localVue,
+      global: { plugins: [store], mocks: { i18n } },
     });
   });
 
   const clickMenuPageButtonByTitle = async (
-    wrapper: Wrapper<any>,
-    title: string
+    wrapper: VueWrapper<any>,
+    title: string,
   ) => wrapper.find(`*[title='${title}']`).trigger("click");
 
   describe("feedback button", () => {
@@ -78,54 +72,57 @@ describe("MenuPage", () => {
 
     beforeEach(() => {
       wrapper = mount(MenuPage, {
-        store,
-        localVue,
+        global: { plugins: [store], mocks: { i18n } },
       });
     });
 
-    it("should open a new tab to the Chrome help page when the feedback button is clicked and the user agent is Chrome", async () => {
+    it("should open the project issue tracker when feedback is clicked in Chrome", async () => {
       mockUserAgent(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)",
       );
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
-        chrome.tabs.create.withArgs({ url: "https://otp.ee/chromeissues" })
-          .calledOnce,
-        "Tab create should be called with the Chrome URL"
+        chrome.tabs.create.withArgs({
+          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+        }).called,
+        "Tab create should be called with the project issue tracker URL",
       );
     });
 
-    it("should open a new tab to the Edge help page when the feedback button is clicked and the user agent is Edge", async () => {
+    it("should open the project issue tracker when feedback is clicked in Edge", async () => {
       mockUserAgent(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.74 Safari/537.36 Edg/79.0.309.43"
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.74 Safari/537.36 Edg/79.0.309.43",
       );
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
-        chrome.tabs.create.withArgs({ url: "https://otp.ee/edgeissues" })
-          .calledOnce,
-        "Tab create should be called with the Edge URL"
+        chrome.tabs.create.withArgs({
+          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+        }).called,
+        "Tab create should be called with the project issue tracker URL",
       );
     });
 
-    it("should open a new tab to the Firefox help page when the feedback button is clicked and the user agent is Firefox", async () => {
+    it("should open the project issue tracker when feedback is clicked in Firefox", async () => {
       mockUserAgent(
-        "Mozilla/5.0 (Windows NT x.y; rv:10.0) Gecko/20100101 Firefox/10.0"
+        "Mozilla/5.0 (Windows NT x.y; rv:10.0) Gecko/20100101 Firefox/10.0",
       );
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
-        chrome.tabs.create.withArgs({ url: "https://otp.ee/firefoxissues" })
-          .calledOnce,
-        "Tab create should be called with the Firefox URL"
+        chrome.tabs.create.withArgs({
+          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+        }).called,
+        "Tab create should be called with the project issue tracker URL",
       );
     });
 
-    it("should open a new tab to the Chrome help page when the feedback button is clicked and the user agent is unknown", async () => {
+    it("should open the project issue tracker for an unknown user agent", async () => {
       mockUserAgent("Unknown");
       await clickMenuPageButtonByTitle(wrapper, "Feedback");
       assert.ok(
-        chrome.tabs.create.withArgs({ url: "https://otp.ee/chromeissues" })
-          .called,
-        "Tab create should be called with the Chrome URL"
+        chrome.tabs.create.withArgs({
+          url: "https://github.com/Authenticator-Extension/Authenticator/issues",
+        }).called,
+        "Tab create should be called with the project issue tracker URL",
       );
     });
 
@@ -149,8 +146,7 @@ describe("MenuPage", () => {
           });
 
           wrapper = mount(MenuPage, {
-            store,
-            localVue,
+            global: { plugins: [store], mocks: { i18n } },
           });
         } catch (e) {
           console.error(e);
@@ -164,7 +160,7 @@ describe("MenuPage", () => {
         assert.ok(
           chrome.tabs.create.withArgs({ url: "https://authenticator.cc" })
             .called,
-          "Tab create should be called with the feedback URL"
+          "Tab create should be called with the feedback URL",
         );
       });
     });

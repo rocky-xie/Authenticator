@@ -51,13 +51,15 @@
         </p>
         <p
           v-bind:title="i18n.translate"
-          v-on:click="openLink('https://otp.ee/translate')"
+          v-on:click="openLink('https://crowdin.com/project/authenticator')"
         >
           <span><IconGlobe /></span>{{ i18n.translate }}
         </p>
         <p
           v-bind:title="i18n.source"
-          v-on:click="openLink('https://otp.ee/sourcecode')"
+          v-on:click="
+            openLink('https://github.com/Authenticator-Extension/Authenticator')
+          "
         >
           <span><IconCode /></span>{{ i18n.source }}
         </p>
@@ -72,7 +74,7 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { syncTimeWithGoogle } from "../../syncTime";
 
 import IconArrowLeft from "../../../svg/arrow-left.svg";
@@ -87,10 +89,10 @@ import IconComments from "../../../svg/comments.svg";
 import IconGlobe from "../../../svg/globe.svg";
 import IconCode from "../../../svg/code.svg";
 import IconClipboardCheck from "../../../svg/clipboard-check.svg";
-import { isFirefox, isSafari } from "../../browser";
+import { isSafari } from "../../browser";
 import { UserSettings } from "../../models/settings";
 
-export default Vue.extend({
+export default defineComponent({
   components: {
     IconArrowLeft,
     IconInfo,
@@ -120,13 +122,8 @@ export default Vue.extend({
       this.$store.commit("style/hideMenu");
     },
     openHelp() {
-      let url = "https://otp.ee/chromeissues";
-
-      if (navigator.userAgent.indexOf("Firefox") !== -1) {
-        url = "https://otp.ee/firefoxissues";
-      } else if (navigator.userAgent.indexOf("Edg") !== -1) {
-        url = "https://otp.ee/edgeissues";
-      }
+      let url =
+        "https://github.com/Authenticator-Extension/Authenticator/issues";
 
       const feedbackURL = this.$store.state.menu.feedbackURL;
       if (typeof feedbackURL === "string" && feedbackURL) {
@@ -160,7 +157,7 @@ export default Vue.extend({
             this.$store.commit("notification/alert", this.i18n[message]);
           }
           return;
-        }
+        },
       );
       return;
     },

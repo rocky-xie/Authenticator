@@ -21,7 +21,7 @@
 </template>
 <script lang="ts">
 import * as CryptoJS from "crypto-js";
-import Vue from "vue";
+import { defineComponent } from "vue";
 import {
   decryptBackupData,
   getEntryDataFromOTPAuthPerLine,
@@ -29,7 +29,7 @@ import {
 import { EntryStorage } from "../../models/storage";
 import { Encryption } from "../../models/encryption";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       getFilePassphrase: false,
@@ -62,12 +62,12 @@ export default Vue.extend({
           try {
             importData = JSON.parse(reader.result as string);
             succeededCount = Object.keys(importData).filter(
-              (key) => ["key", "enc", "hash"].indexOf(key) === -1
+              (key) => ["key", "enc", "hash"].indexOf(key) === -1,
             ).length;
           } catch (e) {
             console.warn(e);
             const result = await getEntryDataFromOTPAuthPerLine(
-              reader.result as string
+              reader.result as string,
             );
             importData = result.exportData;
             failedCount = result.failedCount;
@@ -96,21 +96,20 @@ export default Vue.extend({
 
             if (possibleEntry.keyId || possibleEntry.encrypted) {
               try {
-                const oldPassphrase:
-                  | string
-                  | null = await this.getOldPassphrase();
+                const oldPassphrase: string | null =
+                  await this.getOldPassphrase();
 
                 if (key) {
                   // v2 encryption
                   decryptedFileData = await decryptBackupData(
                     importData,
-                    CryptoJS.AES.decrypt(key.enc, oldPassphrase).toString()
+                    CryptoJS.AES.decrypt(key.enc, oldPassphrase).toString(),
                   );
                 } else {
                   // v3 and v1 encryption
                   decryptedFileData = await decryptBackupData(
                     importData,
-                    oldPassphrase
+                    oldPassphrase,
                   );
                 }
 
@@ -125,7 +124,7 @@ export default Vue.extend({
           if (Object.keys(decryptedFileData).length) {
             await EntryStorage.import(
               this.$encryption as Encryption,
-              decryptedFileData
+              decryptedFileData,
             );
             if (failedCount === 0) {
               alert(this.i18n.updateSuccess);

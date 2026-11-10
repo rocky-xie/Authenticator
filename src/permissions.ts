@@ -1,5 +1,5 @@
 // Vue
-import Vue from "vue";
+import { createApp } from "vue";
 import Vuex from "vuex";
 
 // Components
@@ -11,15 +11,10 @@ import { loadI18nMessages } from "./store/i18n";
 import { Permissions } from "./store/Permissions";
 
 async function init() {
-  // i18n
-  Vue.prototype.i18n = await loadI18nMessages();
-
-  // Load modules
-  Vue.use(Vuex);
-
-  // Load common components globally
+  const app = createApp(PermissionsView);
+  app.config.globalProperties.i18n = await loadI18nMessages();
   for (const component of CommonComponents) {
-    Vue.component(component.name, component.component);
+    app.component(component.name, component.component);
   }
 
   // State
@@ -29,10 +24,7 @@ async function init() {
     },
   });
 
-  const instance = new Vue({
-    render: (h) => h(PermissionsView),
-    store,
-  }).$mount("#permissions");
+  const instance = app.use(store).mount("#permissions");
 
   // Set title
   try {

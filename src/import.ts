@@ -1,4 +1,4 @@
-import Vue from "vue";
+import { createApp } from "vue";
 import ImportView from "./components/Import.vue";
 import CommonComponents from "./components/common/index";
 import { loadI18nMessages } from "./store/i18n";
@@ -7,21 +7,21 @@ import { Encryption } from "./models/encryption";
 import { EntryStorage } from "./models/storage";
 import { getOTPAuthPerLineFromOPTAuthMigration } from "./models/migration";
 import * as CryptoJS from "crypto-js";
+import { argonHash, argonVerify } from "./models/password";
+import { parseOTPAuthURI } from "./models/otpauth-uri";
 
 async function init() {
-  // i18n
-  Vue.prototype.i18n = await loadI18nMessages();
-
-  // Load common components globally
+  const app = createApp(ImportView);
+  app.config.globalProperties.i18n = await loadI18nMessages();
   for (const component of CommonComponents) {
-    Vue.component(component.name, component.component);
+    app.component(component.name, component.component);
   }
 
   // Load entries to global
   const cachedSecrets = await getCachedSecrets();
   const encryption = new Encryption(
     cachedSecrets.cachedPassphrase,
-    cachedSecrets.cachedKeyId
+    cachedSecrets.cachedKeyId,
   );
   const entries = await EntryStorage.get();
 
@@ -31,12 +31,10 @@ async function init() {
     }
   }
 
-  Vue.prototype.$entries = entries;
-  Vue.prototype.$encryption = encryption;
+  app.config.globalProperties.$entries = entries;
+  app.config.globalProperties.$encryption = encryption;
 
-  const instance = new Vue({
-    render: (h) => h(ImportView),
-  }).$mount("#import");
+  const instance = app.mount("#import");
 
   // Set title
   try {
@@ -49,14 +47,18 @@ async function init() {
 init();
 
 async function getCachedSecrets() {
-  const { cachedPassphrase, cachedKeyId } = await chrome.storage.session.get();
+  const { cachedPassphrase = "", cachedKeyId = "" } =
+    (await chrome.storage.session.get(["cachedPassphrase", "cachedKeyId"])) as {
+      cachedPassphrase?: string;
+      cachedKeyId?: string;
+    };
 
   return { cachedPassphrase, cachedKeyId };
 }
 
 export async function decryptBackupData(
   backupData: { [hash: string]: OTPStorage | Key },
-  passphrase: string | null
+  passphrase: string | null,
 ) {
   const decryptedBackupData: { [hash: string]: RawOTPStorage } = {};
   const keys: Map<string, string | null> = new Map();
@@ -80,8 +82,8 @@ export async function decryptBackupData(
           await findAndUnlockKey(
             backupData,
             unknownStorageItem.keyId,
-            passphrase
-          )
+            passphrase,
+          ),
         );
       }
       const decryptKey = keys.get(unknownStorageItem.keyId);
@@ -94,8 +96,8 @@ export async function decryptBackupData(
         ...unknownStorageItem,
         ...JSON.parse(
           CryptoJS.AES.decrypt(unknownStorageItem.data, decryptKey).toString(
-            CryptoJS.enc.Utf8
-          )
+            CryptoJS.enc.Utf8,
+          ),
         ),
         encrypted: false,
       };
@@ -112,10 +114,10 @@ export async function decryptBackupData(
       try {
         storageItem.secret = CryptoJS.AES.decrypt(
           storageItem.secret,
-          passphrase
+          passphrase,
         ).toString(CryptoJS.enc.Utf8);
         storageItem.encrypted = false;
-      } catch (error) {
+      } catch {
         continue;
       }
     }
@@ -132,7 +134,7 @@ export async function decryptBackupData(
 async function findAndUnlockKey(
   importData: { [key: string]: OTPStorage | Key },
   keyId: string,
-  password: string
+  password: string,
 ): Promise<string | null> {
   if (!(keyId in importData)) {
     return null;
@@ -143,21 +145,7 @@ async function findAndUnlockKey(
     return null;
   }
 
-  const rawHash = await new Promise((resolve: (value: string) => void) => {
-    const iframe = document.getElementById("argon-sandbox");
-    const message = {
-      action: "hash",
-      value: password,
-      salt: key.salt,
-    };
-    if (iframe) {
-      window.addEventListener("message", (response) => {
-        resolve(response.data.response);
-      });
-      // @ts-expect-error bad typings
-      iframe.contentWindow.postMessage(message, "*");
-    }
-  });
+  const rawHash = await argonHash(password, key.salt);
 
   // https://passlib.readthedocs.io/en/stable/lib/passlib.hash.argon2.html#format-algorithm
   const possibleHash = rawHash.split("$")[5];
@@ -167,23 +155,7 @@ async function findAndUnlockKey(
 
   // verify user password by comparing their password hash with the
   // hash of their password's hash
-  const isCorrectPassword = await new Promise(
-    (resolve: (value: string) => void) => {
-      const iframe = document.getElementById("argon-sandbox");
-      const message = {
-        action: "verify",
-        value: possibleHash,
-        hash: key.hash,
-      };
-      if (iframe) {
-        window.addEventListener("message", (response) => {
-          resolve(response.data.response);
-        });
-        // @ts-expect-error bad typings
-        iframe.contentWindow.postMessage(message, "*");
-      }
-    }
-  );
+  const isCorrectPassword = await argonVerify(possibleHash, key.hash);
 
   if (!isCorrectPassword) {
     return null;
@@ -210,89 +182,16 @@ export async function getEntryDataFromOTPAuthPerLine(importCode: string) {
       continue;
     }
 
-    let uri = item.split("otpauth://")[1];
-    let type = uri.substr(0, 4).toLowerCase();
-    uri = uri.substr(5);
-    let label = uri.split("?")[0];
-    const parameterPart = uri.split("?")[1];
-    if (!parameterPart) {
+    const parsed = parseOTPAuthURI(item);
+    if (!parsed) {
       failedCount++;
       continue;
     } else {
-      let secret = "";
-      let account: string | undefined;
-      let issuer: string | undefined;
-      let algorithm: string | undefined;
-      let period: number | undefined;
-      let digits: number | undefined;
-
-      try {
-        label = decodeURIComponent(label);
-      } catch (error) {
-        console.error(error);
-      }
-      if (label.indexOf(":") !== -1) {
-        issuer = label.split(":")[0];
-        account = label.split(":")[1];
-      } else {
-        account = label;
-      }
-      const parameters = parameterPart.split("&");
-      parameters.forEach((item) => {
-        const parameter = item.split("=");
-        if (parameter[0].toLowerCase() === "secret") {
-          secret = parameter[1];
-        } else if (parameter[0].toLowerCase() === "issuer") {
-          try {
-            issuer = decodeURIComponent(parameter[1]);
-          } catch {
-            issuer = parameter[1];
-          }
-          issuer = issuer.replace(/\+/g, " ");
-        } /* else if (parameter[0].toLowerCase() === "counter") {
-          let counter = Number(parameter[1]);
-          counter = isNaN(counter) || counter < 0 ? 0 : counter;
-        } */ else if (
-          parameter[0].toLowerCase() === "period"
-        ) {
-          period = Number(parameter[1]);
-          period =
-            isNaN(period) || period < 0 || period > 60 || 60 % period !== 0
-              ? undefined
-              : period;
-        } else if (parameter[0].toLowerCase() === "digits") {
-          digits = Number(parameter[1]);
-          digits = isNaN(digits) ? 6 : digits;
-        } else if (parameter[0].toLowerCase() === "algorithm") {
-          algorithm = parameter[1];
-        }
-      });
-
-      if (!secret) {
-        failedCount++;
-        continue;
-      } else if (
-        !/^[0-9a-f]+$/i.test(secret) &&
-        !/^[2-7a-z]+=*$/i.test(secret)
-      ) {
-        failedCount++;
-        continue;
-      } else {
+      const { account, algorithm, counter, digits, issuer, period, secret } =
+        parsed;
+      const type = parsed.type;
+      {
         const hash = crypto.randomUUID();
-        if (
-          !/^[2-7a-z]+=*$/i.test(secret) &&
-          /^[0-9a-f]+$/i.test(secret) &&
-          type === "totp"
-        ) {
-          type = "hex";
-        } else if (
-          !/^[2-7a-z]+=*$/i.test(secret) &&
-          /^[0-9a-f]+$/i.test(secret) &&
-          type === "hotp"
-        ) {
-          type = "hhex";
-        }
-
         exportData[hash] = {
           account,
           hash,
@@ -301,7 +200,7 @@ export async function getEntryDataFromOTPAuthPerLine(importCode: string) {
           type,
           encrypted: false,
           index: 0,
-          counter: 0,
+          counter,
           pinned: false,
         };
         if (period) {

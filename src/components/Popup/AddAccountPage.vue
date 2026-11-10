@@ -44,11 +44,11 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { mapState } from "vuex";
 import { OTPType, OTPEntry, OTPAlgorithm } from "../../models/otp";
 
-export default Vue.extend({
+export default defineComponent({
   data: function (): {
     newAccount: {
       issuer: string;
@@ -116,9 +116,8 @@ export default Vue.extend({
       }
 
       const defaultEncyptionKey = this.$store.state.accounts.defaultEncryption;
-      const encryption = this.$store.state.accounts.encryption[
-        defaultEncyptionKey
-      ];
+      const encryption =
+        this.$store.state.accounts.encryption[defaultEncyptionKey];
 
       const entry = new OTPEntry(
         {
@@ -133,7 +132,7 @@ export default Vue.extend({
           digits: this.newAccount.digits,
           algorithm: this.newAccount.algorithm,
         },
-        encryption
+        encryption,
       );
 
       await entry.create();

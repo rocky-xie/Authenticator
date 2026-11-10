@@ -72,7 +72,7 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { mapState } from "vuex";
 import { getCurrentTab, okToInjectContentScript } from "../../utils";
 
@@ -98,7 +98,7 @@ for (const module of computedPrototype) {
   Object.assign(computed, module);
 }
 
-export default Vue.extend({
+export default defineComponent({
   computed,
   methods: {
     isPopup() {
@@ -174,7 +174,7 @@ export default Vue.extend({
           if (
             await this.$store.dispatch(
               "notification/confirm",
-              this.i18n.capture_local_file_failed
+              this.i18n.capture_local_file_failed,
             )
           ) {
             window.open("import.html?QrImport", "_blank");

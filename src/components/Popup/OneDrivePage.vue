@@ -28,8 +28,12 @@
       </a-button>
       <div class="text" v-show="!backupToken">
         <a
-          v-on:click="openLink('https://otp.ee/onedriveperms')"
-          href="https://otp.ee/onedriveperms"
+          v-on:click="
+            openLink(
+              'https://github.com/Authenticator-Extension/Authenticator/wiki',
+            )
+          "
+          href="https://github.com/Authenticator-Extension/Authenticator/wiki"
           >{{ i18n.onedrive_business_perms }}</a
         >
       </div>
@@ -40,13 +44,13 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { OneDrive } from "../../models/backup";
 import { UserSettings } from "../../models/settings";
 
 const service = "onedrive";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       email: this.i18n.loading,
@@ -99,14 +103,14 @@ export default Vue.extend({
     async backupUpload() {
       const oneDrive = new OneDrive();
       const response = await oneDrive.upload(
-        this.$store.state.accounts.encryption
+        this.$store.state.accounts.encryption,
       );
       if (response === true) {
         this.$store.commit("notification/alert", this.i18n.updateSuccess);
       } else if (UserSettings.items.oneDriveRevoked === true) {
         this.$store.commit(
           "notification/alert",
-          chrome.i18n.getMessage("token_revoked", ["OneDrive"])
+          chrome.i18n.getMessage("token_revoked", ["OneDrive"]),
         );
         UserSettings.removeItem("oneDriveRevoked");
         this.$store.commit("backup/setToken", { service, value: false });

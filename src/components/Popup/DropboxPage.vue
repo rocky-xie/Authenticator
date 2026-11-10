@@ -30,13 +30,13 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { Dropbox } from "../../models/backup";
 import { UserSettings } from "../../models/settings";
 
 const service = "dropbox";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       email: this.i18n.loading,
@@ -79,7 +79,7 @@ export default Vue.extend({
         xhr.open("POST", "https://api.dropboxapi.com/2/auth/token/revoke");
         xhr.setRequestHeader(
           "Authorization",
-          "Bearer " + UserSettings.items.dropboxToken
+          "Bearer " + UserSettings.items.dropboxToken,
         );
         xhr.onreadystatechange = () => {
           if (xhr.readyState === 4) {
@@ -101,7 +101,7 @@ export default Vue.extend({
       } else if (UserSettings.items.dropboxRevoked === true) {
         this.$store.commit(
           "notification/alert",
-          chrome.i18n.getMessage("token_revoked", ["Dropbox"])
+          chrome.i18n.getMessage("token_revoked", ["Dropbox"]),
         );
         UserSettings.removeItem("dropboxToken");
         this.$store.commit("backup/setToken", { service, value: false });

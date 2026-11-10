@@ -1,7 +1,6 @@
 // Vue
-import Vue from "vue";
+import { createApp, type ComponentPublicInstance } from "vue";
 import Vuex from "vuex";
-import { Vue2Dragula } from "vue2-dragula";
 
 // Components
 import Popup from "./components/Popup.vue";
@@ -34,16 +33,12 @@ async function init() {
   await migrateLocalStorageToBrowserStorage();
   await UserSettings.updateItems();
 
-  // Add globals
-  Vue.prototype.i18n = await loadI18nMessages();
+  const i18n = await loadI18nMessages();
 
-  // Load modules
-  Vue.use(Vuex);
-  Vue.use(Vue2Dragula);
-
-  // Load common components globally
+  const app = createApp(Popup);
+  app.config.globalProperties.i18n = i18n;
   for (const component of CommonComponents) {
-    Vue.component(component.name, component.component);
+    app.component(component.name, component.component);
   }
 
   // State
@@ -61,17 +56,9 @@ async function init() {
   });
 
   // Render
-  const instance = new Vue({
-    render: (h) => h(Popup),
-    store,
-    mounted() {
-      // Update time based entries' codes
-      this.$store.commit("accounts/updateCodes");
-      setInterval(() => {
-        this.$store.commit("accounts/updateCodes");
-      }, 1000);
-    },
-  }).$mount("#authenticator");
+  const instance = app.use(store).mount("#authenticator");
+  store.commit("accounts/updateCodes");
+  setInterval(() => store.commit("accounts/updateCodes"), 1000);
 
   // Prompt for password if needed
   if (instance.$store.state.accounts.shouldShowPassphrase) {
@@ -102,7 +89,7 @@ async function init() {
   if (UserSettings.items.encodedPhrase) {
     instance.$store.commit(
       "notification/alert",
-      instance.i18n.local_passphrase_warning
+      instance.i18n.local_passphrase_warning,
     );
   }
 
@@ -151,7 +138,7 @@ async function init() {
         searchInput.focus();
       }
     },
-    false
+    false,
   );
 
   // Show search box if more than 10 entries
@@ -194,13 +181,16 @@ async function init() {
       if (hasPermission) {
         syncTimeWithGoogle();
       }
-    }
+    },
   );
 }
 
 init();
 
-async function runScheduledBackup(clientTime: number, instance: Vue) {
+async function runScheduledBackup(
+  clientTime: number,
+  instance: ComponentPublicInstance,
+) {
   if (instance.$store.state.backup.dropboxToken) {
     chrome.permissions.contains(
       { origins: ["https://*.dropboxapi.com/*"] },
@@ -210,8 +200,8 @@ async function runScheduledBackup(clientTime: number, instance: Vue) {
             const dropbox = new Dropbox();
             const res = await dropbox.upload(
               instance.$store.state.accounts.encryption.get(
-                instance.$store.state.accounts.defaultEncryption
-              )
+                instance.$store.state.accounts.defaultEncryption,
+              ),
             );
             if (res) {
               // we have uploaded backup to Dropbox
@@ -222,22 +212,22 @@ async function runScheduledBackup(clientTime: number, instance: Vue) {
             } else if (UserSettings.items.dropboxRevoked === true) {
               instance.$store.commit(
                 "notification/alert",
-                chrome.i18n.getMessage("token_revoked", ["Dropbox"])
+                chrome.i18n.getMessage("token_revoked", ["Dropbox"]),
               );
               UserSettings.items.dropboxRevoked = undefined;
               UserSettings.removeItem("dropboxRevoked");
             }
-          } catch (error) {
+          } catch {
             // ignore
           }
         }
         instance.$store.commit(
           "notification/alert",
-          instance.i18n.remind_backup
+          instance.i18n.remind_backup,
         );
         UserSettings.items.lastRemindingBackupTime = clientTime;
         UserSettings.commitItems();
-      }
+      },
     );
   }
   if (instance.$store.state.backup.driveToken) {
@@ -254,8 +244,8 @@ async function runScheduledBackup(clientTime: number, instance: Vue) {
             const drive = new Drive();
             const res = await drive.upload(
               instance.$store.state.accounts.encryption.get(
-                instance.$store.state.accounts.defaultEncryption
-              )
+                instance.$store.state.accounts.defaultEncryption,
+              ),
             );
             if (res) {
               UserSettings.items.lastRemindingBackupTime = clientTime;
@@ -264,22 +254,22 @@ async function runScheduledBackup(clientTime: number, instance: Vue) {
             } else if (UserSettings.items.driveRevoked === true) {
               instance.$store.commit(
                 "notification/alert",
-                chrome.i18n.getMessage("token_revoked", ["Google Drive"])
+                chrome.i18n.getMessage("token_revoked", ["Google Drive"]),
               );
               UserSettings.items.driveRevoked = undefined;
               UserSettings.removeItem("driveRevoked");
             }
-          } catch (error) {
+          } catch {
             // ignore
           }
         }
         instance.$store.commit(
           "notification/alert",
-          instance.i18n.remind_backup
+          instance.i18n.remind_backup,
         );
         UserSettings.items.lastRemindingBackupTime = clientTime;
         UserSettings.commitItems();
-      }
+      },
     );
   }
   if (instance.$store.state.backup.oneDriveToken) {
@@ -296,8 +286,8 @@ async function runScheduledBackup(clientTime: number, instance: Vue) {
             const onedrive = new OneDrive();
             const res = await onedrive.upload(
               instance.$store.state.accounts.encryption.get(
-                instance.$store.state.accounts.defaultEncryption
-              )
+                instance.$store.state.accounts.defaultEncryption,
+              ),
             );
             if (res) {
               UserSettings.items.lastRemindingBackupTime = clientTime;
@@ -306,22 +296,22 @@ async function runScheduledBackup(clientTime: number, instance: Vue) {
             } else if (UserSettings.items.oneDriveRevoked === true) {
               instance.$store.commit(
                 "notification/alert",
-                chrome.i18n.getMessage("token_revoked", ["OneDrive"])
+                chrome.i18n.getMessage("token_revoked", ["OneDrive"]),
               );
               UserSettings.items.oneDriveRevoked = undefined;
               UserSettings.removeItem("oneDriveRevoked");
             }
-          } catch (error) {
+          } catch {
             // ignore
           }
         }
         instance.$store.commit(
           "notification/alert",
-          instance.i18n.remind_backup
+          instance.i18n.remind_backup,
         );
         UserSettings.items.lastRemindingBackupTime = clientTime;
         UserSettings.commitItems();
-      }
+      },
     );
   }
   if (

@@ -1,7 +1,6 @@
-const path = require("path");
 const { merge } = require('webpack-merge');
 const common = require('./webpack.config.js');
-const { ProvidePlugin } = require("webpack");
+const { NormalModuleReplacementPlugin, ProvidePlugin } = require("webpack");
 
 module.exports = merge(common, {
   entry: {
@@ -12,10 +11,14 @@ module.exports = merge(common, {
     fallback: {
       "util": require.resolve("util/"),
       "buffer": require.resolve('buffer/'),
+      "events": require.resolve("events/"),
       "stream": require.resolve("stream-browserify")
     }
   },
   plugins: [
+    new NormalModuleReplacementPlugin(/^node:/, (resource) => {
+      resource.request = resource.request.replace(/^node:/, "");
+    }),
     new ProvidePlugin({
       process: 'process/browser.js',
     }),

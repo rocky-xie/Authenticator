@@ -16,7 +16,7 @@ export class Backup implements Module {
       mutations: {
         setToken(
           state: BackupState,
-          args: { service: string; value: boolean }
+          args: { service: string; value: boolean },
         ) {
           switch (args.service) {
             case "dropbox":

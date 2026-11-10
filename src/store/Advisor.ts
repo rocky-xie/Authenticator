@@ -26,7 +26,7 @@ const insightsData: AdvisorInsightInterface[] = [
     id: "browserSyncNotEnabled",
     level: InsightLevel.info,
     description: chrome.i18n.getMessage(
-      "advisor_insight_browser_sync_not_enabled"
+      "advisor_insight_browser_sync_not_enabled",
     ),
     validation: async () => {
       await UserSettings.updateItems();
@@ -38,7 +38,7 @@ const insightsData: AdvisorInsightInterface[] = [
     id: "autoFillNotEnabled",
     level: InsightLevel.info,
     description: chrome.i18n.getMessage(
-      "advisor_insight_auto_fill_not_enabled"
+      "advisor_insight_auto_fill_not_enabled",
     ),
     validation: async () => {
       await UserSettings.updateItems();
@@ -49,7 +49,7 @@ const insightsData: AdvisorInsightInterface[] = [
     id: "smartFilterNotEnabled",
     level: InsightLevel.info,
     description: chrome.i18n.getMessage(
-      "advisor_insight_smart_filter_not_enabled"
+      "advisor_insight_smart_filter_not_enabled",
     ),
     validation: async () => {
       await UserSettings.updateItems();
@@ -115,7 +115,7 @@ export class Advisor implements Module {
     }
 
     return filteredInsightsData.map(
-      (insightData) => new AdvisorInsight(insightData)
+      (insightData) => new AdvisorInsight(insightData),
     );
   }
 }

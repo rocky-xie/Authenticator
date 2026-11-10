@@ -27,7 +27,7 @@ otpauth://hotp/...
 </template>
 <script lang="ts">
 import * as CryptoJS from "crypto-js";
-import Vue from "vue";
+import { defineComponent } from "vue";
 import {
   decryptBackupData,
   getEntryDataFromOTPAuthPerLine,
@@ -35,7 +35,7 @@ import {
 import { EntryStorage } from "../../models/storage";
 import { Encryption } from "../../models/encryption";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       importCode: "",
@@ -83,7 +83,7 @@ export default Vue.extend({
         if (key && passphrase) {
           decryptedbackupData = await decryptBackupData(
             exportData,
-            CryptoJS.AES.decrypt(key.enc, passphrase).toString()
+            CryptoJS.AES.decrypt(key.enc, passphrase).toString(),
           );
         } else {
           decryptedbackupData = await decryptBackupData(exportData, passphrase);
@@ -92,7 +92,7 @@ export default Vue.extend({
         if (Object.keys(decryptedbackupData).length) {
           await EntryStorage.import(
             this.$encryption as Encryption,
-            decryptedbackupData
+            decryptedbackupData,
           );
           if (failedCount === 0) {
             alert(this.i18n.updateSuccess);

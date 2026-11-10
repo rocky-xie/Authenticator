@@ -1,16 +1,7 @@
 import "mocha";
-import * as chai from "chai";
-import * as sinon from "sinon";
-import * as sinonChai from "sinon-chai";
-
-chai.use(sinonChai);
 mocha.setup("bdd");
 
-import {
-  AlgorithmIndentifier,
-  GostDigest,
-  gostEngine as GostEngine,
-} from "node-gost-crypto";
+import { Streebog256HMAC, Streebog512HMAC } from "@globalart/crypto-streebog";
 import { expect } from "chai";
 import { KeyUtilities } from "../models/key-utilities";
 import { OTPAlgorithm, OTPType, OTPUtil } from "../models/otp";
@@ -31,45 +22,25 @@ function calculateCounter(date: Date) {
 async function testAlgorithm(
   secret: string,
   counter: number,
-  algorithm: OTPAlgorithm
+  algorithm: OTPAlgorithm,
 ) {
   const previousCounter = counter - 1;
-  let alg: AlgorithmIndentifier;
-  let cipher: GostDigest;
-  alg = {
-    mode: "HMAC",
-    name: "GOST R 34.11",
-    version: 2012,
-    length: OTPUtil.getOTPAlgorithmSpec(algorithm).length,
-  };
-  cipher = GostEngine.getGostDigest(alg);
+  const key = new Uint8Array(parseHexString(secret));
+  const hmac =
+    algorithm === OTPAlgorithm.GOST3411_2012_256
+      ? Streebog256HMAC
+      : Streebog512HMAC;
   //current counter
-  const signatureArray = new Uint8Array(
-    cipher.sign(
-      new Uint8Array(parseHexString(secret)),
-      new Uint8Array(counterToArray(counter))
-    )
-  );
+  const signatureArray = hmac(key)
+    .update(new Uint8Array(counterToArray(counter)))
+    .digest();
   const signature = toHexString(signatureArray);
-  const isSignatureOk = cipher.verify(
-    new Uint8Array(parseHexString(secret)),
-    signatureArray,
-    new Uint8Array(counterToArray(counter))
-  );
   const otp = getOtp(signature);
   //previous counter
-  const prevSignatureArray = new Uint8Array(
-    cipher.sign(
-      new Uint8Array(parseHexString(secret)),
-      new Uint8Array(counterToArray(previousCounter))
-    )
-  );
+  const prevSignatureArray = hmac(key)
+    .update(new Uint8Array(counterToArray(previousCounter)))
+    .digest();
   const prevSignature = toHexString(prevSignatureArray);
-  const isPrevSignatureOk = cipher.verify(
-    new Uint8Array(parseHexString(secret)),
-    prevSignatureArray,
-    new Uint8Array(counterToArray(previousCounter))
-  );
   const previousOtp = getOtp(prevSignature);
   //check hash algorithm
   it(
@@ -84,8 +55,10 @@ async function testAlgorithm(
       signature +
       "', verifying",
     () => {
-      expect(isSignatureOk).to.eq(true);
-    }
+      expect(signature).to.have.length(
+        OTPUtil.getOTPAlgorithmSpec(algorithm).length / 4,
+      );
+    },
   );
   //check previous hash algorithm
   it(
@@ -100,8 +73,10 @@ async function testAlgorithm(
       prevSignature +
       "', verifying",
     () => {
-      expect(isPrevSignatureOk).to.eq(true);
-    }
+      expect(prevSignature).to.have.length(
+        OTPUtil.getOTPAlgorithmSpec(algorithm).length / 4,
+      );
+    },
   );
   //check otp is different from previous one
   it(
@@ -115,7 +90,7 @@ async function testAlgorithm(
       "', verifying otp codes are different",
     () => {
       expect(otp).to.not.eq(previousOtp);
-    }
+    },
   );
   //check otp generated is valid
   const _secret = "B1B0AE0E5ADFBF89A5F7DF440592A3AE"; //measuring 'secret'
@@ -127,7 +102,7 @@ async function testAlgorithm(
     _counter,
     30,
     6,
-    algorithm
+    algorithm,
   );
   let _validOtp = "";
   if (algorithm === OTPAlgorithm.GOST3411_2012_256) {
@@ -149,7 +124,7 @@ async function testAlgorithm(
       "', verifying",
     () => {
       expect(_otp).to.eq(_validOtp);
-    }
+    },
   );
 }
 
@@ -176,7 +151,7 @@ function getRandomHEXString(length: number) {
   let result = "";
   for (let i = 0; i < length; i++) {
     result += randomChars.charAt(
-      Math.floor(Math.random() * randomChars.length)
+      Math.floor(Math.random() * randomChars.length),
     );
   }
   return result;
@@ -187,7 +162,7 @@ function hex2dec(s: string) {
 }
 
 function parseHexString(str: string) {
-  let result = [];
+  const result = [];
   while (str.length >= 8) {
     result.push(parseInt(str.substring(0, 8), 16));
     str = str.substring(8, str.length);

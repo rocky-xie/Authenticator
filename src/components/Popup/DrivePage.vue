@@ -30,14 +30,14 @@
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { isChrome } from "../../browser";
 import { Drive } from "../../models/backup";
 import { UserSettings } from "../../models/settings";
 
 const service = "drive";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       email: this.i18n.loading,
@@ -80,7 +80,7 @@ export default Vue.extend({
         xhr.open(
           "POST",
           "https://accounts.google.com/o/oauth2/revoke?token=" +
-            UserSettings.items.driveToken
+            UserSettings.items.driveToken,
         );
         xhr.onreadystatechange = () => {
           if (xhr.readyState === 4) {
@@ -89,7 +89,7 @@ export default Vue.extend({
                 { token: UserSettings.items.driveToken as string },
                 () => {
                   resolve(true);
-                }
+                },
               );
             } else {
               resolve(true);
@@ -106,14 +106,14 @@ export default Vue.extend({
     async backupUpload() {
       const drive = new Drive();
       const response = await drive.upload(
-        this.$store.state.accounts.encryption
+        this.$store.state.accounts.encryption,
       );
       if (response === true) {
         this.$store.commit("notification/alert", this.i18n.updateSuccess);
       } else if (UserSettings.items.driveRevoked === true) {
         this.$store.commit(
           "notification/alert",
-          chrome.i18n.getMessage("token_revoked", ["Google Drive"])
+          chrome.i18n.getMessage("token_revoked", ["Google Drive"]),
         );
         UserSettings.removeItem("driveRevoked");
         this.$store.commit("backup/setToken", { service, value: false });

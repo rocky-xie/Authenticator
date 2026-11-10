@@ -4,6 +4,7 @@ chrome*
 firefox*
 edge*
 dist
+release
 .vscode
 .atom-build.yml
 scripts/authenticator-build-key.enc

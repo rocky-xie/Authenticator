@@ -7,10 +7,9 @@
 #   'chrome', 'firefox', 'edge', 'test', or 'prod'
 
 PLATFORM=$1
-REMOTE=$(git config --get remote.origin.url)
+REMOTE=$(git config --get remote.origin.url || true)
 CREDS=$(cat ./src/models/credentials.ts | tr -d '\n')
 CREDREGEX='^.*".+".*".+".*".+".*".+".*".+".*$'
-STYLEFILES="./src/* ./src/**/* ./src/**/**/* ./src/**/**/**/* ./sass/*.scss"
 set -e
 
 if [[ $PLATFORM != "chrome" ]] && [[ $PLATFORM != "firefox" ]] && [[ $PLATFORM != "edge" ]] && [[ $PLATFORM != "prod" ]] && [[ $PLATFORM != "test" ]]; then
@@ -22,32 +21,36 @@ echo "Removing old build files..."
 rm -rf build dist
 rm -rf firefox chrome edge release test
 echo "Checking style..."
-if ./node_modules/.bin/prettier --check $STYLEFILES 1> /dev/null ; then
+if find ./src ./sass -type f \
+    \( -name '*.js' -o -name '*.ts' -o -name '*.vue' -o -name '*.scss' \) \
+    -print0 | xargs -0 ./node_modules/.bin/prettier --check 1> /dev/null ; then
     true
 else
-    ./node_modules/.bin/prettier --check $STYLEFILES --write
+    find ./src ./sass -type f \
+        \( -name '*.js' -o -name '*.ts' -o -name '*.vue' -o -name '*.scss' \) \
+        -print0 | xargs -0 ./node_modules/.bin/prettier --write
 fi
 
-./node_modules/.bin/eslint . --ext .js,.ts
-
 if ! [[ $CREDS =~ $CREDREGEX ]] ; then
-    if [[ $PLATFORM = "prod" ]]; then
-        echo -e "\e[7m\033[33mError: Missing info in credentials.ts\033[0m"
+    if [[ ${REQUIRE_RELEASE_CREDENTIALS:-0} = "1" ]]; then
+        echo -e "\e[7m\033[33mError: Missing cloud-provider credentials in credentials.ts\033[0m"
         exit 1
     else
-        echo -e "\e[7m\033[33mWarning: Missing info in credentials.ts\033[0m"
+        echo -e "\e[7m\033[33mWarning: Cloud backup providers are disabled because credentials.ts is incomplete\033[0m"
     fi
 fi
 
-if ! [[ $REMOTE = *"https://github.com/Authenticator-Extension/Authenticator.git"* || $REMOTE = *"git@github.com:Authenticator-Extension/Authenticator.git"* || $CI ]] ; then
+if ! [[ $REMOTE = *"github.com/Authenticator-Extension/Authenticator"* || ${CI:-} ]] ; then
     echo
     echo -e "\e[7m\033[33mNotice\033[0m"
     echo
     echo -e "Thanks for forking Authenticator! If you plan on redistributing your own version of Authenticator please generate your own API keys and put them in ./src/models/credentials.ts and ./manifest-chrome.json"
     echo "Clear this warning by commenting it out in ./scripts/build.sh"
     echo
-    read -rsp $'Press any key to continue...\n' -n1 key
-    echo
+    if [[ -t 0 ]]; then
+        read -rsp $'Press any key to continue...\n' -n1 key
+        echo
+    fi
 fi
 
 echo "Compiling..."
@@ -55,19 +58,23 @@ if [[ $PLATFORM = "prod" ]]; then
     ./node_modules/webpack-cli/bin/cli.js --config webpack.prod.js
 elif [[ $PLATFORM = "test" ]]; then
     ./node_modules/webpack-cli/bin/cli.js --config webpack.dev.js
-    ./node_modules/.bin/tsc --target ES2015 --esModuleInterop --moduleResolution nodenext --module commonjs scripts/test-runner.ts
+    ./node_modules/.bin/tsc --target ES2015 --esModuleInterop --moduleResolution node --module commonjs scripts/test-runner.ts
 else
     ./node_modules/webpack-cli/bin/cli.js
 fi
-./node_modules/sass/sass.js sass:css
-cp ./sass/DroidSansMono.woff2 ./sass/mocha.css ./css/
+if [[ $PLATFORM = "prod" ]]; then
+    ./node_modules/sass/sass.js --no-source-map sass:css
+else
+    ./node_modules/sass/sass.js sass:css
+fi
+cp ./sass/DroidSansMono.woff2 ./css/
+if [[ $PLATFORM = "test" ]]; then
+    cp ./sass/mocha.css ./css/
+fi
 
 if [[ $PLATFORM = "prod" ]]; then
     echo "Generating licenses file..."
-    ./node_modules/.bin/npm-license-generator \
-        --out-path ./view/licenses.html \
-        --template ./scripts/licenses-template.html \
-        --error-missing=true
+    node ./scripts/generate-licenses.js
 fi
 
 postCompile () {
@@ -85,6 +92,13 @@ postCompile () {
     fi
 
     cp manifests/manifest-pwa.json $1/manifest-pwa.json
+
+    if [[ $PLATFORM != "test" ]]; then
+        rm -f "$1/view/test.html" "$1/css/mocha.css" \
+            "$1/css/content.css.map" "$1/css/import.css.map" \
+            "$1/css/permissions.css.map" "$1/css/popup.css.map" \
+            "$1/css/mocha.css.map"
+    fi
 }
 
 if [[ $PLATFORM = "prod" ]]; then

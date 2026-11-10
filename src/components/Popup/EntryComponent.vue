@@ -58,8 +58,9 @@
         hotp: entry.type === OTPType.hotp || entry.type === OTPType.hhex,
         timeout: entry.period - (second % entry.period) < 5,
       }"
-      v-html="style.isEditing ? showBulls(entry) : showCode(entry.code)"
-    ></div>
+    >
+      {{ style.isEditing ? showBulls(entry) : showCode(entry.code) }}
+    </div>
     <div class="issuer account">{{ entry.account }}</div>
     <div class="issuerEdit">
       <input
@@ -85,7 +86,7 @@
   </a>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { mapState } from "vuex";
 import * as QRGen from "qrcode-generator";
 import { OTPEntry, OTPType, CodeState, OTPAlgorithm } from "../../models/otp";
@@ -116,7 +117,7 @@ for (const module of computedPrototype) {
   Object.assign(computed, module);
 }
 
-export default Vue.extend({
+export default defineComponent({
   computed,
   props: {
     entry: OTPEntry,
@@ -127,7 +128,7 @@ export default Vue.extend({
       return (
         code === CodeState.Encrypted ||
         code === CodeState.Invalid ||
-        code.startsWith("&bull;")
+        code.startsWith("•")
       );
     },
     shouldShowQrIcon(entry: OTPEntry) {
@@ -154,17 +155,17 @@ export default Vue.extend({
         return this.i18n.invalid;
       }
 
-      if (entry.code.startsWith("&bull;")) {
+      if (entry.code.startsWith("•")) {
         return entry.code;
       }
 
-      return new Array(entry.digits).fill("&bull;").join("");
+      return new Array(entry.digits).fill("•").join("");
     },
     async removeEntry(entry: OTPEntry) {
       if (
         await this.$store.dispatch(
           "notification/confirm",
-          this.i18n.confirm_delete
+          this.i18n.confirm_delete,
         )
       ) {
         await entry.delete();
@@ -198,7 +199,7 @@ export default Vue.extend({
       if (
         this.$store.state.style.style.isEditing ||
         entry.code === CodeState.Invalid ||
-        entry.code.startsWith("&bull;")
+        entry.code.startsWith("•")
       ) {
         return;
       }
@@ -214,7 +215,7 @@ export default Vue.extend({
         async (granted) => {
           if (granted) {
             const codeClipboard = document.getElementById(
-              "codeClipboard"
+              "codeClipboard",
             ) as HTMLInputElement;
             if (!codeClipboard) {
               return;
@@ -239,10 +240,10 @@ export default Vue.extend({
             lastActiveElement.focus();
             this.$store.dispatch(
               "notification/ephermalMessage",
-              this.i18n.copied
+              this.i18n.copied,
             );
           }
-        }
+        },
       );
 
       return;
@@ -266,8 +267,8 @@ function getQrUrl(entry: OTPEntry) {
     entry.type === OTPType.hex
       ? OTPType[OTPType.totp]
       : entry.type === OTPType.hhex
-      ? OTPType[OTPType.hotp]
-      : OTPType[entry.type];
+        ? OTPType[OTPType.hotp]
+        : OTPType[entry.type];
   const otpauth =
     "otpauth://" +
     type +

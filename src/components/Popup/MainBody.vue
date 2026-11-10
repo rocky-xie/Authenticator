@@ -24,8 +24,7 @@
     </div>
     <!-- Entries -->
     <div
-      v-dragula
-      drake="entryDrake"
+      ref="entryList"
       v-on:keydown.down="focusNextEntry()"
       v-on:keydown.right="focusNextEntry()"
       v-on:keydown.up="focusLastEntry()"
@@ -43,17 +42,24 @@
         <IconKey />
         <p>
           {{ i18n.no_entires }}
-          <a href="#" v-on:click="openLink('https://otp.ee/quickstart')">{{
-            i18n.learn_more
-          }}</a>
+          <a
+            href="#"
+            v-on:click="
+              openLink(
+                'https://github.com/Authenticator-Extension/Authenticator#readme',
+              )
+            "
+            >{{ i18n.learn_more }}</a
+          >
         </p>
       </div>
     </div>
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 import { mapState, mapGetters } from "vuex";
+import Sortable from "sortablejs";
 import { OTPEntry } from "../../models/otp";
 import { EntryStorage } from "../../models/storage";
 
@@ -72,10 +78,11 @@ const computed: {
   ...mapGetters("accounts", ["shouldFilter", "entries"]),
 };
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       searchText: "",
+      sortable: null as Sortable | null,
     };
   },
   computed,
@@ -119,7 +126,7 @@ export default Vue.extend({
     },
     getTabindex(entry: OTPEntry) {
       const firstEntry = this.entries.find((entry) =>
-        this.isEntryVisible(entry)
+        this.isEntryVisible(entry),
       );
 
       return entry === firstEntry ? 0 : -1;
@@ -131,7 +138,7 @@ export default Vue.extend({
 
       const activeIndex = Array.prototype.indexOf.call(
         document.querySelectorAll(".entry"),
-        document.activeElement
+        document.activeElement,
       );
       if (activeIndex === -1) {
         return -1;
@@ -144,7 +151,7 @@ export default Vue.extend({
         (entry, index) =>
           index >
             (reverse ? this.entries.length - 1 - activeIndex : activeIndex) &&
-          this.isEntryVisible(entry)
+          this.isEntryVisible(entry),
       );
 
       if (nextIndex === -1) {
@@ -166,35 +173,29 @@ export default Vue.extend({
         ?.focus();
     },
   },
-  created() {
-    // Don't drag if !isEditing
-    this.$dragula.$service.options("entryDrake", {
-      invalid: () => {
-        if (!this.$store.state.style.style.isEditing) {
-          return true;
-        } else {
-          return false;
+  mounted() {
+    const entryList = this.$refs.entryList as HTMLElement;
+    this.sortable = Sortable.create(entryList, {
+      animation: 150,
+      draggable: ".entry",
+      handle: ".movehandle",
+      filter: () => !this.$store.state.style.style.isEditing,
+      preventOnFilter: true,
+      onEnd: async ({ oldIndex, newIndex }) => {
+        if (oldIndex === undefined || newIndex === undefined) {
+          return;
         }
-      },
-    });
-
-    // Update entry index if dragged
-    this.$dragula.$service.eventBus.$on(
-      "dropModel",
-      async ({
-        dragIndex,
-        dropIndex,
-      }: {
-        dragIndex: number;
-        dropIndex: number;
-      }) => {
         this.$store.commit("accounts/moveCode", {
-          from: dragIndex,
-          to: dropIndex,
+          from: oldIndex,
+          to: newIndex,
         });
         await EntryStorage.set(this.$store.state.accounts.entries);
-      }
-    );
+      },
+    });
+  },
+  beforeDestroy() {
+    this.sortable?.destroy();
+    this.sortable = null;
   },
   components: {
     EntryComponent,

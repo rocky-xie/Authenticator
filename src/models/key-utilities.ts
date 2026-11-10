@@ -1,10 +1,6 @@
-import { OTPType, OTPAlgorithm, OTPUtil } from "./otp";
+import { OTPType, OTPAlgorithm } from "./otp";
 import * as CryptoJS from "crypto-js";
-import {
-  gostEngine as GostEngine,
-  GostDigest,
-  AlgorithmIndentifier,
-} from "node-gost-crypto";
+import { Streebog256HMAC, Streebog512HMAC } from "@globalart/crypto-streebog";
 
 // Originally based on the JavaScript implementation as provided by Russell
 // Sayers on his Tin Isles blog:
@@ -97,25 +93,28 @@ export class KeyUtilities {
   }
 
   private static cryptoJsWordArrayToUint8Array(
-    wordArray: CryptoJS.lib.WordArray
+    wordArray: CryptoJS.lib.WordArray,
   ) {
-    const l = wordArray.sigBytes;
-    const words = wordArray.words;
-    const result = new Uint8Array(l);
-    let i = 0 /*dst*/,
-      j = 0; /*src*/
-    while (i < l) {
-      // here i is a multiple of 4
-      const w = words[j++];
-      result[i++] = (w & 0xff000000) >>> 24;
-      if (i === l) break;
-      result[i++] = (w & 0x00ff0000) >>> 16;
-      if (i === l) break;
-      result[i++] = (w & 0x0000ff00) >>> 8;
-      if (i === l) break;
-      result[i++] = w & 0x000000ff;
+    const result = new Uint8Array(wordArray.sigBytes);
+    let destination = 0;
+    let source = 0;
+    while (destination < wordArray.sigBytes) {
+      const word = wordArray.words[source++];
+      result[destination++] = (word & 0xff000000) >>> 24;
+      if (destination === wordArray.sigBytes) break;
+      result[destination++] = (word & 0x00ff0000) >>> 16;
+      if (destination === wordArray.sigBytes) break;
+      result[destination++] = (word & 0x0000ff00) >>> 8;
+      if (destination === wordArray.sigBytes) break;
+      result[destination++] = word & 0x000000ff;
     }
     return result;
+  }
+
+  private static uint8ArrayToHex(value: Uint8Array) {
+    return Array.from(value, (byte) => byte.toString(16).padStart(2, "0")).join(
+      "",
+    );
   }
 
   static generate(
@@ -125,7 +124,7 @@ export class KeyUtilities {
     period: number,
     len?: number,
     algorithm?: OTPAlgorithm,
-    clockOffset?: number
+    clockOffset?: number,
   ) {
     secret = secret.replace(/\s/g, "");
     if (!len) {
@@ -160,7 +159,10 @@ export class KeyUtilities {
     }
 
     if (type !== OTPType.hotp && type !== OTPType.hhex) {
-      let epoch = Math.round(new Date().getTime() / 1000.0);
+      // RFC 6238 uses the number of whole seconds since the Unix epoch.
+      // Rounding would switch to the next Microsoft/OATH TOTP code up to
+      // half a second before the server does.
+      let epoch = Math.floor(new Date().getTime() / 1000.0);
       if (clockOffset) {
         epoch = epoch + Number(clockOffset);
       }
@@ -177,48 +179,51 @@ export class KeyUtilities {
       }
     }
 
-    let alg: AlgorithmIndentifier;
-    let gostCipher: GostDigest;
-
-    let hmacObj: CryptoJS.lib.WordArray;
+    let hmac = "";
     switch (algorithm) {
       case OTPAlgorithm.SHA256:
-        hmacObj = CryptoJS.HmacSHA256(
-          CryptoJS.enc.Hex.parse(time),
-          CryptoJS.enc.Hex.parse(key)
+        hmac = CryptoJS.enc.Hex.stringify(
+          CryptoJS.HmacSHA256(
+            CryptoJS.enc.Hex.parse(time),
+            CryptoJS.enc.Hex.parse(key),
+          ),
         );
         break;
       case OTPAlgorithm.SHA512:
-        hmacObj = CryptoJS.HmacSHA512(
-          CryptoJS.enc.Hex.parse(time),
-          CryptoJS.enc.Hex.parse(key)
+        hmac = CryptoJS.enc.Hex.stringify(
+          CryptoJS.HmacSHA512(
+            CryptoJS.enc.Hex.parse(time),
+            CryptoJS.enc.Hex.parse(key),
+          ),
         );
         break;
       case OTPAlgorithm.GOST3411_2012_256:
       case OTPAlgorithm.GOST3411_2012_512:
-        alg = {
-          mode: "HMAC",
-          name: "GOST R 34.11",
-          version: 2012,
-          length: OTPUtil.getOTPAlgorithmSpec(algorithm).length,
-        };
-        gostCipher = GostEngine.getGostDigest(alg);
-        hmacObj = CryptoJS.lib.WordArray.create(
-          gostCipher.sign(
-            this.cryptoJsWordArrayToUint8Array(CryptoJS.enc.Hex.parse(key)),
-            this.cryptoJsWordArrayToUint8Array(CryptoJS.enc.Hex.parse(time))
-          )
+        // Preserve the byte interpretation used by previous releases so
+        // existing GOST accounts keep producing identical codes.
+        const keyBytes = this.cryptoJsWordArrayToUint8Array(
+          CryptoJS.enc.Hex.parse(key),
+        );
+        const timeBytes = this.cryptoJsWordArrayToUint8Array(
+          CryptoJS.enc.Hex.parse(time),
+        );
+        const signer =
+          algorithm === OTPAlgorithm.GOST3411_2012_256
+            ? Streebog256HMAC(keyBytes)
+            : Streebog512HMAC(keyBytes);
+        hmac = this.uint8ArrayToHex(
+          signer.update(timeBytes).digest() as Uint8Array,
         );
         break;
       default:
-        hmacObj = CryptoJS.HmacSHA1(
-          CryptoJS.enc.Hex.parse(time),
-          CryptoJS.enc.Hex.parse(key)
+        hmac = CryptoJS.enc.Hex.stringify(
+          CryptoJS.HmacSHA1(
+            CryptoJS.enc.Hex.parse(time),
+            CryptoJS.enc.Hex.parse(key),
+          ),
         );
         break;
     }
-
-    const hmac = CryptoJS.enc.Hex.stringify(hmacObj);
 
     const offset = this.hex2dec(hmac.substring(hmac.length - 1));
 

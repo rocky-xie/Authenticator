@@ -15,6 +15,7 @@ interface UserSettingsData {
   dropboxToken?: string;
   lastRemindingBackupTime?: number;
   offset?: number;
+  offsetUpdatedAt?: number;
   oneDriveBusiness?: boolean;
   oneDriveEncrypted?: boolean;
   oneDriveRevoked?: boolean;
@@ -45,6 +46,7 @@ const LocalUserSettingsDataKeys = [
   "dropboxToken",
   "lastRemindingBackupTime",
   "offset",
+  "offsetUpdatedAt",
   "oneDriveBusiness",
   "oneDriveEncrypted",
   "oneDriveRevoked",
@@ -56,13 +58,37 @@ const LocalUserSettingsDataKeys = [
 export class UserSettings {
   static items: UserSettingsData = {};
 
+  /**
+   * Clock correction is deliberately short-lived. TOTP itself is based on
+   * Unix time and is independent of the local timezone, but a correction
+   * saved after a temporary clock problem must not shift codes forever.
+   * Legacy offsets without a timestamp are therefore ignored.
+   */
+  static getClockOffset(now = Date.now()) {
+    const offset = Number(UserSettings.items.offset);
+    const updatedAt = Number(UserSettings.items.offsetUpdatedAt);
+    const maxAge = 24 * 60 * 60 * 1000;
+
+    if (
+      !Number.isFinite(offset) ||
+      !Number.isFinite(updatedAt) ||
+      updatedAt <= 0 ||
+      now < updatedAt ||
+      now - updatedAt > maxAge
+    ) {
+      return 0;
+    }
+
+    return offset;
+  }
+
   static async updateItems() {
     UserSettings.items = await UserSettings.getAllItems();
   }
 
   static async convertFromLocalStorage(
     data: Storage,
-    location: StorageLocation
+    location: StorageLocation,
   ) {
     const settings: UserSettingsData = {};
 
@@ -95,7 +121,7 @@ export class UserSettings {
       });
     } else {
       const { syncableSettings, localSettings } = UserSettings.splitSettings(
-        UserSettings.items
+        UserSettings.items,
       );
 
       await Promise.all([
@@ -113,7 +139,7 @@ export class UserSettings {
 
   static async removeItem(key: keyof UserSettingsData) {
     const localSettings = await UserSettings.getStorageData(
-      StorageLocation.Local
+      StorageLocation.Local,
     );
     const storageLocation =
       localSettings.storageLocation || StorageLocation.Local;
@@ -158,7 +184,7 @@ export class UserSettings {
 
   private static async getAllItems() {
     const localSettings = await UserSettings.getStorageData(
-      StorageLocation.Local
+      StorageLocation.Local,
     );
     const storageLocation =
       localSettings.storageLocation || StorageLocation.Local;
@@ -168,7 +194,7 @@ export class UserSettings {
     }
 
     const syncableSettings = await UserSettings.getStorageData(
-      StorageLocation.Sync
+      StorageLocation.Sync,
     );
     return { ...syncableSettings, ...localSettings };
   }
@@ -186,7 +212,12 @@ type BooleanOption =
   | "oneDriveRevoked"
   | "smartFilter";
 
-type NumberOption = "autolock" | "lastRemindingBackupTime" | "offset" | "zoom";
+type NumberOption =
+  | "autolock"
+  | "lastRemindingBackupTime"
+  | "offset"
+  | "offsetUpdatedAt"
+  | "zoom";
 
 type JSONOption = "advisorIgnoreList";
 
@@ -206,9 +237,13 @@ function isBooleanOption(key: string): key is BooleanOption {
 }
 
 function isNumberOption(key: string): key is NumberOption {
-  return ["autolock", "lastRemindingBackupTime", "offset", "zoom"].includes(
-    key
-  );
+  return [
+    "autolock",
+    "lastRemindingBackupTime",
+    "offset",
+    "offsetUpdatedAt",
+    "zoom",
+  ].includes(key);
 }
 
 function isJSONOption(key: string): key is JSONOption {

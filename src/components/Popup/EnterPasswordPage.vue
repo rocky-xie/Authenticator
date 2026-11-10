@@ -8,16 +8,16 @@
       :class="{ badInput: wrongPassword }"
       :autofocus="true"
     />
-    <label class="warning" v-show="wrongPassword">{{
+    <label class="warning" v-if="wrongPassword">{{
       i18n.phrase_not_match
     }}</label>
     <a-button type="small" @click="applyPassphrase()">{{ i18n.ok }}</a-button>
   </div>
 </template>
 <script lang="ts">
-import Vue from "vue";
+import { defineComponent } from "vue";
 
-export default Vue.extend({
+export default defineComponent({
   data: function () {
     return {
       password: "",
@@ -32,7 +32,7 @@ export default Vue.extend({
     async applyPassphrase() {
       await this.$store.dispatch("accounts/applyPassphrase", this.password);
       const firstEntry = document.querySelector(
-        ".entry[tabindex='0']"
+        ".entry[tabindex='0']",
       ) as HTMLElement;
       firstEntry?.focus();
     },

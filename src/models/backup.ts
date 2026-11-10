@@ -19,7 +19,7 @@ export class Dropbox implements BackupProvider {
     }
     const exportData = await EntryStorage.backupGetExport(
       encryption,
-      UserSettings.items.dropboxEncrypted === true
+      UserSettings.items.dropboxEncrypted === true,
     );
     const backup = JSON.stringify(exportData, null, 2);
 
@@ -67,7 +67,7 @@ export class Dropbox implements BackupProvider {
         } catch (error) {
           return reject(error as Error);
         }
-      }
+      },
     );
   }
   async getUser() {
@@ -88,7 +88,7 @@ export class Dropbox implements BackupProvider {
             UserSettings.items.dropboxRevoked = true;
             UserSettings.commitItems();
             resolve(
-              "Error: Response was 401. You will be logged out the next time you open Authenticator."
+              "Error: Response was 401. You will be logged out the next time you open Authenticator.",
             );
           }
           try {
@@ -119,13 +119,13 @@ export class Drive implements BackupProvider {
       (await new Promise(
         (
           resolve: (value: boolean) => void,
-          reject: (reason: Error) => void
+          reject: (reason: Error) => void,
         ) => {
           const xhr = new XMLHttpRequest();
           xhr.open("GET", "https://www.googleapis.com/drive/v3/files");
           xhr.setRequestHeader(
             "Authorization",
-            "Bearer " + UserSettings.items.driveToken
+            "Bearer " + UserSettings.items.driveToken,
           );
           xhr.onreadystatechange = async () => {
             if (xhr.readyState === 4) {
@@ -159,7 +159,7 @@ export class Drive implements BackupProvider {
             return;
           };
           xhr.send();
-        }
+        },
       ))
     ) {
       await this.refreshToken();
@@ -188,14 +188,14 @@ export class Drive implements BackupProvider {
             }
             UserSettings.commitItems();
             resolve(Boolean(token));
-          }
+          },
         );
       });
     } else {
       return new Promise(
         (
           resolve: (value: boolean) => void,
-          reject: (reason: Error) => void
+          reject: (reason: Error) => void,
         ) => {
           const xhr = new XMLHttpRequest();
           xhr.open(
@@ -206,7 +206,7 @@ export class Drive implements BackupProvider {
               getCredentials().drive.client_secret +
               "&refresh_token=" +
               UserSettings.items.driveRefreshToken +
-              "&grant_type=refresh_token"
+              "&grant_type=refresh_token",
           );
           xhr.setRequestHeader("Accept", "application/json");
           xhr.onreadystatechange = () => {
@@ -240,7 +240,7 @@ export class Drive implements BackupProvider {
             return;
           };
           xhr.send();
-        }
+        },
       );
     }
   }
@@ -255,14 +255,14 @@ export class Drive implements BackupProvider {
       await new Promise(
         (
           resolve: (value: boolean) => void,
-          reject: (reason: Error) => void
+          reject: (reason: Error) => void,
         ) => {
           const xhr = new XMLHttpRequest();
           xhr.open(
             "GET",
             "https://www.googleapis.com/drive/v3/files/" +
               UserSettings.items.driveFolder +
-              "?fields=trashed"
+              "?fields=trashed",
           );
           xhr.setRequestHeader("Authorization", "Bearer " + token);
           xhr.setRequestHeader("Accept", "application/json");
@@ -299,14 +299,14 @@ export class Drive implements BackupProvider {
             return;
           };
           xhr.send();
-        }
+        },
       );
     }
     if (!UserSettings.items.driveFolder) {
       await new Promise(
         (
           resolve: (value: boolean) => void,
-          reject: (reason: Error) => void
+          reject: (reason: Error) => void,
         ) => {
           // create folder
           const xhr = new XMLHttpRequest();
@@ -342,9 +342,9 @@ export class Drive implements BackupProvider {
             JSON.stringify({
               name: "Authenticator Backups",
               mimeType: "application/vnd.google-apps.folder",
-            })
+            }),
           );
-        }
+        },
       );
     }
     return UserSettings.items.driveFolder;
@@ -358,7 +358,7 @@ export class Drive implements BackupProvider {
     }
     const exportData = await EntryStorage.backupGetExport(
       encryption,
-      UserSettings.items.driveEncrypted === true
+      UserSettings.items.driveEncrypted === true,
     );
     const backup = JSON.stringify(exportData, null, 2);
 
@@ -377,12 +377,12 @@ export class Drive implements BackupProvider {
           const now = new Date().toISOString().slice(0, 10).replace(/-/g, "");
           xhr.open(
             "POST",
-            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
+            "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
           );
           xhr.setRequestHeader("Authorization", "Bearer " + token);
           xhr.setRequestHeader(
             "Content-type",
-            "multipart/related; boundary=segment_marker"
+            "multipart/related; boundary=segment_marker",
           );
           xhr.onreadystatechange = () => {
             if (xhr.readyState === 4) {
@@ -428,7 +428,7 @@ export class Drive implements BackupProvider {
         } catch (error) {
           return reject(error as Error);
         }
-      }
+      },
     );
   }
 
@@ -452,7 +452,7 @@ export class Drive implements BackupProvider {
             UserSettings.items.driveToken = undefined;
             UserSettings.commitItems();
             resolve(
-              "Error: Response was 401. You will be logged out the next time you open Authenticator."
+              "Error: Response was 401. You will be logged out the next time you open Authenticator.",
             );
           }
           try {
@@ -483,16 +483,16 @@ export class OneDrive implements BackupProvider {
       (await new Promise(
         (
           resolve: (value: boolean) => void,
-          reject: (reason: Error) => void
+          reject: (reason: Error) => void,
         ) => {
           const xhr = new XMLHttpRequest();
           xhr.open(
             "GET",
-            "https://graph.microsoft.com/v1.0/me/drive/special/approot"
+            "https://graph.microsoft.com/v1.0/me/drive/special/approot",
           );
           xhr.setRequestHeader(
             "Authorization",
-            "Bearer " + UserSettings.items.oneDriveToken
+            "Bearer " + UserSettings.items.oneDriveToken,
           );
           xhr.onreadystatechange = async () => {
             if (xhr.readyState === 4) {
@@ -515,7 +515,7 @@ export class OneDrive implements BackupProvider {
             return;
           };
           xhr.send();
-        }
+        },
       ))
     ) {
       await this.refreshToken();
@@ -530,11 +530,11 @@ export class OneDrive implements BackupProvider {
         const xhr = new XMLHttpRequest();
         xhr.open(
           "POST",
-          "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+          "https://login.microsoftonline.com/common/oauth2/v2.0/token",
         );
         xhr.setRequestHeader(
           "Content-Type",
-          "application/x-www-form-urlencoded"
+          "application/x-www-form-urlencoded",
         );
         xhr.onreadystatechange = () => {
           if (xhr.readyState === 4) {
@@ -570,12 +570,12 @@ export class OneDrive implements BackupProvider {
           `client_id=${getCredentials().onedrive.client_id}&refresh_token=${
             UserSettings.items.oneDriveRefreshToken
           }&client_secret=${encodeURIComponent(
-            getCredentials().onedrive.client_secret
+            getCredentials().onedrive.client_secret,
           )}&grant_type=refresh_token&scope=https%3A%2F%2Fgraph.microsoft.com%2FFiles.ReadWrite${
             UserSettings.items.oneDriveBusiness !== true ? ".AppFolder" : ""
-          }%20https%3A%2F%2Fgraph.microsoft.com%2FUser.Read%20offline_access`
+          }%20https%3A%2F%2Fgraph.microsoft.com%2FUser.Read%20offline_access`,
         );
-      }
+      },
     );
   }
 
@@ -586,7 +586,7 @@ export class OneDrive implements BackupProvider {
     }
     const exportData = await EntryStorage.backupGetExport(
       encryption,
-      UserSettings.items.oneDriveEncrypted === true
+      UserSettings.items.oneDriveEncrypted === true,
     );
     const backup = JSON.stringify(exportData, null, 2);
 
@@ -605,7 +605,7 @@ export class OneDrive implements BackupProvider {
           const now = new Date().toISOString().slice(0, 10).replace(/-/g, "");
           xhr.open(
             "PUT",
-            `https://graph.microsoft.com/v1.0/me/drive/special/approot:/${now}.json:/content`
+            `https://graph.microsoft.com/v1.0/me/drive/special/approot:/${now}.json:/content`,
           );
           xhr.setRequestHeader("Authorization", "Bearer " + token);
           xhr.setRequestHeader("Content-type", "application/octet-stream");
@@ -633,7 +633,7 @@ export class OneDrive implements BackupProvider {
         } catch (error) {
           return reject(error as Error);
         }
-      }
+      },
     );
   }
 
@@ -655,7 +655,7 @@ export class OneDrive implements BackupProvider {
             UserSettings.items.oneDriveToken = undefined;
             UserSettings.commitItems();
             resolve(
-              "Error: Response was 401. You will be logged out the next time you open Authenticator."
+              "Error: Response was 401. You will be logged out the next time you open Authenticator.",
             );
           }
           try {

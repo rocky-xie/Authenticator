@@ -63,7 +63,7 @@ export class OTPEntry implements OTPEntryInterface {
   encData?: string;
   encSecret?: string;
   keyId?: string;
-  code = "&bull;&bull;&bull;&bull;&bull;&bull;";
+  code = "••••••";
 
   constructor(
     entry:
@@ -88,7 +88,7 @@ export class OTPEntry implements OTPEntryInterface {
           hash: string;
           index: number;
         },
-    encryption?: EncryptionInterface
+    encryption?: EncryptionInterface,
   ) {
     this.encryption = encryption;
     this.index = entry.index;
@@ -210,7 +210,7 @@ export class OTPEntry implements OTPEntryInterface {
       console.warn(
         "Decrypt successful, but hash mismatch!",
         this.hash,
-        decryptedData.hash
+        decryptedData.hash,
       );
     }
 
@@ -256,7 +256,7 @@ export class OTPEntry implements OTPEntryInterface {
   }
 
   generate() {
-    const offset = UserSettings.items ? UserSettings.items.offset : 0;
+    const offset = UserSettings.getClockOffset();
     if (!UserSettings.items) {
       // browser storage is async, so we need to wait for it to load
       // and re-generate the code
@@ -280,7 +280,7 @@ export class OTPEntry implements OTPEntryInterface {
           this.period,
           this.digits,
           this.algorithm,
-          offset
+          offset,
         );
       } catch (error) {
         this.code = CodeState.Invalid;
